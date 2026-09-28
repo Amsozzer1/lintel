@@ -1,0 +1,54 @@
+{
+  "name": "@amsozzer/lintel",
+  "version": "0.1.0",
+  "description": "Catch Supabase RLS leaks in the pull request that introduces them: PR diffs, leak probes, CLI + REST + MCP.",
+  "license": "MIT",
+  "author": "Ahmed Sozzer",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Amsozzer1/lintel.git"
+  },
+  "type": "module",
+  "bin": {
+    "lintel": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "depcruise": "node scripts/depcruise.ts",
+    "gen": "node scripts/gen.ts",
+    "test": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "check:all": "pnpm lint && pnpm typecheck && pnpm depcruise && pnpm test"
+  },
+  "packageManager": "pnpm@12.6.0+sha512.3ef68f951cb111ac204b4a5a16f0b2ddf0da56a96e0413e81d855d9f0b55ef926714709028e1cd00c405c2c5fb7b9e8ec4dc46777c805d0373c2f2ff00fd20ec",
+  "dependencies": {
+    "commander": "^15.0.0",
+    "execa": "^10.0.1",
+    "pg": "^8.23.0",
+    "picocolors": "^1.1.1",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.14",
+    "@swc/core": "^1.16.2",
+    "@types/node": "^24.19.0",
+    "@types/pg": "^8.23.1",
+    "dependency-cruiser": "^18.4.0",
+    "fast-check": "^4.10.2",
+    "tsup": "^8.5.1",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.2"
+  }
+}
