@@ -16,3 +16,7 @@ insert into public.room_members (room_id, user_id) values
 
 insert into public.blog_posts (title, body, published_at) values
   ('Hello', 'Our first post.', now());
+
+insert into public.messages (room_id, author_id, body) values
+  (1, '11111111-1111-1111-1111-111111111111', 'hey bob, the launch code is 0000'),
+  (1, '22222222-2222-2222-2222-222222222222', 'ha, very funny');
