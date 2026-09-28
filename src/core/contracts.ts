@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { errorsMarkdown } from "./errors.ts";
 import { Diff, Report } from "./findings.ts";
 
 /** Public, versioned contracts that are committed to the repo and checked for drift. */
@@ -8,5 +9,6 @@ export function contractFiles(): Record<string, string> {
   return {
     "schemas/findings.v1.json": schema(Report, "findings.v1.json"),
     "schemas/diff.v1.json": schema(Diff, "diff.v1.json"),
+    "docs/errors.md": errorsMarkdown(),
   };
 }
