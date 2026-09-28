@@ -31,6 +31,8 @@ program
   .command("check")
   .description("check one database: Supabase advisors, plus proof probes with --probe")
   .option("--db <url|env:VAR>", "database to check (default: env:DATABASE_URL)")
+  .option("--probe", "also prove leaks by querying as anon (read-only, rolled back)")
+  .option("--schema <list>", "schemas PostgREST exposes, comma-separated", "public")
   .option("--format <format>", "human | json", "human")
   .option(
     "--fail-on <level>",
