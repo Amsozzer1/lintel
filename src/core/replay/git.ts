@@ -1,5 +1,5 @@
 /** Read a Supabase project's migrations and seed at a git ref, or from the working tree. */
-import { readdir, readFile } from "node:fs/promises";
+import { readdir, readFile, stat } from "node:fs/promises";
 import { join, posix } from "node:path";
 import { execa } from "execa";
 import { LintelError } from "../errors.ts";
@@ -13,6 +13,28 @@ export interface SupabaseFiles {
   /** Sorted by file name, which is how Supabase orders migrations. */
   migrations: SqlFile[];
   seed: string | undefined;
+}
+
+/**
+ * Fail early, with the right message, when repoDir is not a git work tree.
+ * Without this, a bad path surfaces later as a misleading "ref not found".
+ */
+export async function assertRepo(repoDir: string): Promise<void> {
+  const info = await stat(repoDir).catch(() => undefined);
+  if (!info?.isDirectory()) {
+    throw new LintelError("LINTEL_E_GIT", `\`${repoDir}\` does not exist or is not a folder`, {
+      next: "pass the absolute path of the repository root (the folder that contains .git)",
+    });
+  }
+  const r = await execa("git", ["rev-parse", "--is-inside-work-tree"], {
+    cwd: repoDir,
+    reject: false,
+  });
+  if (r.exitCode !== 0 || String(r.stdout).trim() !== "true") {
+    throw new LintelError("LINTEL_E_GIT", `\`${repoDir}\` is not inside a git repository`, {
+      next: "pass the repository root (the folder that contains .git), or run `git init` there",
+    });
+  }
 }
 
 export async function readAtRef(

@@ -8,7 +8,7 @@ import { diffReports } from "./diff.ts";
 import type { Diff, Report } from "./findings.ts";
 import { applyFiles } from "./replay/apply.ts";
 import { type ManagedDb, startDb } from "./replay/docker.ts";
-import { readAtRef, readWorktree, type SupabaseFiles, shortSha } from "./replay/git.ts";
+import { assertRepo, readAtRef, readWorktree, type SupabaseFiles, shortSha } from "./replay/git.ts";
 
 export interface CheckMigrationsInput {
   repoDir: string;
@@ -31,6 +31,7 @@ export interface CheckMigrationsResult {
 export async function checkMigrations(input: CheckMigrationsInput): Promise<CheckMigrationsResult> {
   const supabaseDir = input.supabaseDir ?? "supabase";
   const progress = input.onProgress ?? (() => {});
+  await assertRepo(input.repoDir);
   const [baseFiles, headFiles, baseLabel, headLabel] = await Promise.all([
     readAtRef(input.repoDir, input.baseRef, supabaseDir),
     input.headRef
