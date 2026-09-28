@@ -1,0 +1,131 @@
+{
+  "$id": "https://github.com/Amsozzer1/lintel/schemas/findings.v1.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$ref": "#/$defs/Report",
+  "$defs": {
+    "Report": {
+      "type": "object",
+      "properties": {
+        "schema": {
+          "type": "string",
+          "const": "lintel.findings/v1"
+        },
+        "lintel_version": {
+          "type": "string"
+        },
+        "target": {
+          "type": "object",
+          "properties": {
+            "label": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        "probes": {
+          "type": "object",
+          "properties": {
+            "ran": {
+              "type": "boolean"
+            },
+            "skipped_reason": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "ran"
+          ],
+          "additionalProperties": false
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Finding"
+          }
+        }
+      },
+      "required": [
+        "schema",
+        "lintel_version",
+        "target",
+        "probes",
+        "findings"
+      ],
+      "additionalProperties": false
+    },
+    "Finding": {
+      "type": "object",
+      "properties": {
+        "fingerprint": {
+          "type": "string",
+          "description": "Stable identity across runs and databases. Never contains OIDs."
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "advisor",
+            "probe"
+          ]
+        },
+        "rule": {
+          "type": "string",
+          "description": "Advisor lint name (e.g. rls_disabled_in_public) or probe id (e.g. P001)."
+        },
+        "title": {
+          "type": "string"
+        },
+        "level": {
+          "type": "string",
+          "enum": [
+            "error",
+            "warn",
+            "info"
+          ],
+          "description": "Severity. `error` fails CI by default."
+        },
+        "object": {
+          "type": "object",
+          "properties": {
+            "schema": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "kind": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "description": "The database object a finding is about. Values come from the database and are untrusted."
+        },
+        "message": {
+          "type": "string"
+        },
+        "remediation": {
+          "type": "string"
+        },
+        "probe_state": {
+          "type": "string",
+          "enum": [
+            "proven",
+            "unverified_no_rows"
+          ]
+        }
+      },
+      "required": [
+        "fingerprint",
+        "source",
+        "rule",
+        "title",
+        "level",
+        "object",
+        "message"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
