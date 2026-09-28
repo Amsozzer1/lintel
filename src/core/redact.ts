@@ -8,9 +8,16 @@
 const MASK = "***";
 const secrets = new Set<string>();
 
+/**
+ * Minimum length for masking a secret wherever it appears. Shorter strings are ordinary words
+ * ("wrong", "admin"), and masking them would corrupt Lintel's own messages. Short passwords
+ * are still masked by the structural rules (URL userinfo, password=, env assignments).
+ */
+const MIN_LITERAL_SECRET = 8;
+
 /** Register a literal secret so it is masked wherever it appears, raw or percent-encoded. */
 export function registerSecret(secret: string | undefined): void {
-  if (!secret || secret.length < 3) return;
+  if (!secret || secret.length < MIN_LITERAL_SECRET) return;
   secrets.add(secret);
   try {
     secrets.add(decodeURIComponent(secret));

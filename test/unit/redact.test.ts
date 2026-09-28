@@ -49,6 +49,12 @@ describe("redact", () => {
     );
   });
 
+  it("does not mask ordinary words that happen to be a short password", () => {
+    registerSecret("wrong");
+    expect(redact("wrong password, or the wrong user")).toBe("wrong password, or the wrong user");
+    expect(redact("postgresql://postgres:wrong@h/db")).toBe("postgresql://postgres:***@h/db");
+  });
+
   it("leaves text without secrets alone", () => {
     expect(redact("table public.messages has RLS disabled")).toBe(
       "table public.messages has RLS disabled",
