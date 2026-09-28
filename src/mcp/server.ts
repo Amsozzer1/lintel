@@ -190,9 +190,16 @@ export function createServer(config: Config): McpServer {
   return server;
 }
 
+/** Serve over stdio. Resolves when the client disconnects (stdin ends or the transport closes). */
 export async function serveStdio(config: Config): Promise<void> {
   const server = createServer(config);
+  const closed = new Promise<void>((resolve) => {
+    server.server.onclose = () => resolve();
+    process.stdin.once("end", () => resolve());
+  });
   await server.connect(new StdioServerTransport());
+  await closed;
+  await server.close().catch(() => {});
 }
 
 function ok(text: string, data: object): CallToolResult {

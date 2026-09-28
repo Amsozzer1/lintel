@@ -40,4 +40,20 @@ describe("lintel mcp over stdio", () => {
     expect(call.result.isError).toBe(true);
     expect(call.result.content[0].text).toContain("LINTEL_E_NO_DATABASE");
   });
+
+  it("exits 0 without warnings when the client disconnects", async () => {
+    const child = spawn(process.execPath, [CLI, "mcp"], { stdio: ["pipe", "pipe", "pipe"] });
+    let stderr = "";
+    child.stderr.on("data", (d) => {
+      stderr += d;
+    });
+    child.stdin.write(
+      `${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "t", version: "0" } } })}\n`,
+    );
+    await new Promise((r) => setTimeout(r, 500));
+    child.stdin.end();
+    const code = await new Promise<number | null>((r) => child.on("exit", r));
+    expect(code).toBe(0);
+    expect(stderr).not.toMatch(/unsettled|Warning/);
+  });
 });
