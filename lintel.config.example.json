@@ -1,0 +1,7 @@
+{
+  "schemas": ["public"],
+  "profiles": {
+    "local": { "url": "env:DATABASE_URL" },
+    "staging": { "url": "env:STAGING_DATABASE_URL" }
+  }
+}

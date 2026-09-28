@@ -1,3 +1,5 @@
 allowBuilds:
   '@swc/core': false
   esbuild: true
+minimumReleaseAgeExclude:
+  - '@modelcontextprotocol/sdk@1.31.0'

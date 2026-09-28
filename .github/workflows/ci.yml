@@ -33,6 +33,7 @@ jobs:
       - run: pnpm depcruise
       - run: pnpm test
       - run: pnpm build
+      - run: pnpm vitest run --project e2e
       - name: cold start (--help)
         run: |
           start=$(date +%s%N); node dist/cli.js --help > /dev/null; end=$(date +%s%N)

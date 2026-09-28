@@ -37,6 +37,32 @@ New
 2 new (2 error, 0 warn, 0 info) · 0 resolved · 0 unchanged
 ```
 
+## Use it from a coding agent (MCP)
+
+`lintel mcp` serves five read-only tools over stdio. The one agents need most is **`check_migrations`**. Ask your agent *"is this migration safe to merge?"* and it replays your base branch and your working tree into throwaway databases. It answers `NOT SAFE: the change introduces errors`, with the proven leak, before anything reaches a real database.
+
+```json
+{
+  "mcpServers": {
+    "lintel": {
+      "command": "node",
+      "args": ["/abs/path/to/lintel/dist/cli.js", "mcp", "--config", "/abs/path/to/lintel.config.json"],
+      "env": { "STAGING_DATABASE_URL": "postgresql://…" }
+    }
+  }
+}
+```
+
+```json
+{ "schemas": ["public"], "profiles": { "staging": { "url": "env:STAGING_DATABASE_URL" } } }
+```
+
+Design choices:
+- Tools take **profile names, never connection strings**, so credentials don't pass through the model's context.
+- Every tool is read-only.
+- Results mark database identifiers as untrusted data. A table can be named like an instruction.
+- The tool list is a versioned contract ([`schemas/mcp-tools.v1.json`](schemas/mcp-tools.v1.json)) that CI checks for drift.
+
 ## Status
 
 | Piece | State |
@@ -47,7 +73,8 @@ New
 | GitHub Action with a fork-safe sticky comment ([see it on a demo PR](https://github.com/Amsozzer1/lintel/pull/1)) | ✅ |
 | Probe P001: proves what the `anon` key can read (rolled back, read-only) | ✅ |
 | Probes P002 anon write, P003 cross-user read | ⏳ |
-| MCP server, REST API (OpenAPI 3.1) | ⏳ |
+| MCP server: `check_migrations`, `run_checks`, `diff_databases`, `list_checks`, `explain_check` | ✅ |
+| REST API (OpenAPI 3.1) | ⏳ |
 
 `lintel --help` starts in about 25 ms (measured on an M-series Mac with Node 24).
 
