@@ -33,6 +33,30 @@
             },
             "skipped_reason": {
               "type": "string"
+            },
+            "unverified": {
+              "description": "Exposed relations a probe could not prove either way (e.g. no rows).",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "schema": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "schema",
+                  "name",
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
             }
           },
           "required": [

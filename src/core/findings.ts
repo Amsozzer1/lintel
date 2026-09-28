@@ -53,6 +53,12 @@ export const Report = z
     probes: z.object({
       ran: z.boolean(),
       skipped_reason: z.string().optional(),
+      unverified: z
+        .array(z.object({ schema: z.string(), name: z.string(), reason: z.string() }))
+        .optional()
+        .meta({
+          description: "Exposed relations a probe could not prove either way (e.g. no rows).",
+        }),
     }),
     findings: z.array(Finding),
   })

@@ -65,7 +65,7 @@ export async function checkMigrations(input: CheckMigrationsInput): Promise<Chec
 
 async function replayAndCheck(db: ManagedDb, files: SupabaseFiles, label: string): Promise<Report> {
   await applyFiles(db, files, label);
-  return runChecks(db.url, { label, replay: true });
+  return runChecks(db.url, { label, replay: true, probes: true });
 }
 
 function dbOpts(input: CheckMigrationsInput) {

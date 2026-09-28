@@ -76,3 +76,33 @@ describe("splitPassword", () => {
     });
   });
 });
+
+describe("normalizeUrl", () => {
+  // Like libpq, a `%` followed by two hex digits is read as percent-encoding.
+  const libpq = (pw: string) => {
+    try {
+      return decodeURIComponent(pw);
+    } catch {
+      return pw;
+    }
+  };
+
+  it("re-encodes raw passwords so pg parses host and database correctly", async () => {
+    const { normalizeUrl } = await import("../../src/core/db.ts");
+    fc.assert(
+      fc.property(password, (pw) => {
+        const out = normalizeUrl(
+          `postgresql://postgres:${pw}@127.0.0.1:5432/postgres?sslmode=disable`,
+        );
+        expect(out).toBe(
+          `postgresql://postgres:${encodeURIComponent(libpq(pw))}@127.0.0.1:5432/postgres?sslmode=disable`,
+        );
+      }),
+    );
+  });
+
+  it("reads %XX in a password as percent-encoding, like libpq", async () => {
+    const { normalizeUrl } = await import("../../src/core/db.ts");
+    expect(normalizeUrl("postgresql://u:%1aaaa@h/db")).toBe("postgresql://u:%1Aaaa@h/db");
+  });
+});

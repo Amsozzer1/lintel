@@ -49,10 +49,15 @@ describe("checkMigrations", () => {
       baseRef: "base",
       headRef: head,
     });
-    expect(base.findings).toEqual([]);
+    // The demo's blog is public by design; the probe proves it (warn) and it stays unchanged.
+    expect(base.findings.map((f) => `${f.rule}:${f.object.name}:${f.level}`)).toEqual([
+      "P001:blog_posts:warn",
+    ]);
     const rules = diff.new.map((f) => `${f.rule}:${f.object.name}`);
     expect(rules).toContain("rls_disabled_in_public:messages");
     expect(rules).toContain("policy_exists_rls_disabled:messages");
+    expect(rules).not.toContain("P001:messages"); // no seed rows yet
+    expect(diff.unchanged.map((f) => f.rule)).toEqual(["P001"]);
     expect(diff.resolved).toEqual([]);
   });
 

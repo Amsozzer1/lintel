@@ -29,7 +29,7 @@ const program = new Command()
 
 program
   .command("check")
-  .description("check one database (static findings from Supabase advisors)")
+  .description("check one database: Supabase advisors, plus proof probes with --probe")
   .option("--db <url|env:VAR>", "database to check (default: env:DATABASE_URL)")
   .option("--format <format>", "human | json", "human")
   .option(

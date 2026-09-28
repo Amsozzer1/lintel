@@ -9,13 +9,22 @@ export interface CheckOptions {
   db?: string;
   format?: string;
   failOn?: string;
+  probe?: boolean;
+  schema?: string;
 }
 
 export async function run(opts: CheckOptions): Promise<number> {
   const format = parseFormat(opts.format, ["human", "json"]);
   const failOn = parseFailOn(opts.failOn);
   const url = resolveDb(opts.db);
-  const report = await runChecks(url, { label: dbLabel(url) });
+  const report = await runChecks(url, {
+    label: dbLabel(url),
+    probes: opts.probe === true,
+    schemas: (opts.schema ?? "public")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean),
+  });
   out(format === "json" ? JSON.stringify(report, null, 2) : renderReportHuman(report));
   return atOrAbove(report.findings, failOn).length ? ExitCode.findings : ExitCode.ok;
 }
