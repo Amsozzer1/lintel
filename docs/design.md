@@ -102,7 +102,7 @@ Safety:
 The comment:
 - escapes every identifier: HTML, table pipes, `@mentions`, `#refs` and autolinks;
 - stays under GitHub's size limit;
-- carries a hidden state marker, which is how it reports "**resolved since last push**";
+- carries a hidden state marker, which is how it reports "**fixed in this PR**";
 - lists suppressions added by the PR, so reviewers see them.
 
 ## 8. CLI

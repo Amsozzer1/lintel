@@ -33,7 +33,7 @@ Copy [this repository's `lintel-comment.yml`](../.github/workflows/lintel-commen
 - runs on `workflow_run`, so it has a write token but never checks out PR code;
 - confirms the findings belong to the PR's current head commit, which skips stale runs and forged PR numbers;
 - renders the comment with trusted code, escaping every identifier;
-- updates one sticky comment in place, including "resolved since last push".
+- updates one sticky comment in place, including "fixed in this PR".
 
 GitHub only runs `workflow_run` workflows from the default branch, so merge this file before you expect comments.
 
