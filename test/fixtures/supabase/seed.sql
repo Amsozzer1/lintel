@@ -1,0 +1,18 @@
+-- Two users, a shared room, and a public post.
+insert into auth.users (id, email) values
+  ('11111111-1111-1111-1111-111111111111', 'ada@example.com'),
+  ('22222222-2222-2222-2222-222222222222', 'bob@example.com');
+
+insert into public.profiles (id, username) values
+  ('11111111-1111-1111-1111-111111111111', 'ada'),
+  ('22222222-2222-2222-2222-222222222222', 'bob');
+
+insert into public.rooms (name, created_by) values
+  ('general', '11111111-1111-1111-1111-111111111111');
+
+insert into public.room_members (room_id, user_id) values
+  (1, '11111111-1111-1111-1111-111111111111'),
+  (1, '22222222-2222-2222-2222-222222222222');
+
+insert into public.blog_posts (title, body, published_at) values
+  ('Hello', 'Our first post.', now());

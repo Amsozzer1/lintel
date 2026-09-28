@@ -34,7 +34,7 @@ export async function demoRepo(): Promise<{
   commit: (sql: string, name?: string) => Promise<string>;
 }> {
   const dir = await mkdtemp(join(tmpdir(), "lintel-repo-"));
-  await cp(join(import.meta.dirname, "../../demo/supabase"), join(dir, "supabase"), {
+  await cp(join(import.meta.dirname, "../fixtures/supabase"), join(dir, "supabase"), {
     recursive: true,
   });
   const git = (...args: string[]) => execa("git", args, { cwd: dir });
