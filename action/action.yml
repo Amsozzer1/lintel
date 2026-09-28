@@ -1,0 +1,81 @@
+name: Lintel
+description: Replay base and PR migrations into throwaway Supabase databases, check both, and report only what the PR changed.
+branding:
+  icon: shield
+  color: green
+
+inputs:
+  supabase-dir:
+    description: Supabase directory relative to the repository root.
+    default: supabase
+  base-ref:
+    description: Base commit. Defaults to the pull request's base.
+    default: ${{ github.event.pull_request.base.sha }}
+  head-ref:
+    description: Head commit. Defaults to the pull request's merge commit.
+    default: ${{ github.sha }}
+  fail-on:
+    description: Fail on NEW findings at or above this level (error, warn, info, none).
+    default: error
+  supabase-cli-version:
+    description: Supabase CLI version used for advisors.
+    default: 2.118.0
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      with:
+        node-version: 24
+    - uses: supabase/setup-cli@45a513f8c64c0bc8e0e3dfe572b5c95be85f6359 # v3.0.1
+      with:
+        version: ${{ inputs.supabase-cli-version }}
+
+    # Lintel is built from the action's own source, never from the pull request under review.
+    - name: build lintel
+      shell: bash
+      working-directory: ${{ github.action_path }}/..
+      run: |
+        corepack enable
+        pnpm install --frozen-lockfile --silent
+        pnpm build > /dev/null
+
+    - name: check migrations
+      id: check
+      shell: bash
+      env:
+        LINTEL: ${{ github.action_path }}/../dist/cli.js
+        OUT: ${{ runner.temp }}/lintel
+        BASE_REF: ${{ inputs.base-ref }}
+        HEAD_REF: ${{ inputs.head-ref }}
+        SUPABASE_DIR: ${{ inputs.supabase-dir }}
+        FAIL_ON: ${{ inputs.fail-on }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      run: |
+        mkdir -p "$OUT"
+        # Metadata for the commenting workflow, which verifies it against the GitHub API.
+        jq -n --arg n "$PR_NUMBER" --arg sha "$PR_HEAD_SHA" --arg f "$FAIL_ON" \
+          '{number: ($n | tonumber? // null), head_sha: $sha, fail_on: $f}' > "$OUT/pr.json"
+        set +e
+        node "$LINTEL" ci --base-ref "$BASE_REF" --head-ref "$HEAD_REF" \
+          --supabase-dir "$SUPABASE_DIR" --out-dir "$OUT" --format markdown --fail-on "$FAIL_ON" \
+          > "$OUT/summary.md"
+        code=$?
+        set -e
+        cat "$OUT/summary.md" >> "$GITHUB_STEP_SUMMARY"
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+      if: always()
+      with:
+        name: lintel-findings
+        path: ${{ runner.temp }}/lintel
+        if-no-files-found: warn
+        retention-days: 14
+
+    - name: result
+      shell: bash
+      env:
+        CODE: ${{ steps.check.outputs.exit-code }}
+      run: exit "${CODE:-4}"

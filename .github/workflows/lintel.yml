@@ -1,0 +1,31 @@
+# Runs on the pull request with a read-only token and no secrets.
+# The comment is posted by lintel-comment.yml, which never runs PR code.
+name: lintel
+
+on:
+  pull_request:
+    paths:
+      - demo/**
+      - action/**
+      - .github/workflows/lintel*.yml
+
+permissions:
+  contents: read
+
+jobs:
+  lintel:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # The action is taken from the base commit so a PR cannot change the tool that judges it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: .lintel-src
+          persist-credentials: false
+      - uses: ./.lintel-src/action
+        with:
+          supabase-dir: demo/supabase
