@@ -4,6 +4,7 @@ export default defineConfig({
   test: {
     projects: [
       { test: { name: "unit", include: ["test/unit/**/*.test.ts"] } },
+      { test: { name: "e2e", include: ["test/e2e/**/*.test.ts"], testTimeout: 30_000 } },
       {
         test: {
           name: "integration",

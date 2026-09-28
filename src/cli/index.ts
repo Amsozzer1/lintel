@@ -118,6 +118,31 @@ program
   .option("--cleanup", "remove containers left behind by interrupted runs")
   .action((opts) => exec(async () => (await import("./commands/setup.ts")).doctor(opts)));
 
+program
+  .command("mcp")
+  .description("serve the MCP server over stdio (read-only tools for coding agents)")
+  .option("--config <path>", "absolute path to lintel.config.json (database profiles)")
+  .action((opts) => exec(async () => (await import("./commands/mcp.ts")).run(opts)));
+
+program
+  .command("explain")
+  .description("explain a rule: a probe id (P001) or a Supabase lint name or number")
+  .argument("<rule>")
+  .action((rule: string) =>
+    exec(async () => {
+      const { explain } = await import("../core/catalog.ts");
+      const { LintelError, ExitCode } = await import("../core/errors.ts");
+      const { out } = await import("./io.ts");
+      const e = explain(rule);
+      if (!e)
+        throw new LintelError("LINTEL_E_USAGE", `unknown rule \`${rule}\``, {
+          next: "lintel explain P001",
+        });
+      out(`${e.rule} (${e.source}): ${e.title}\n\n${e.summary}\n\ndocs: ${e.docs_url}`);
+      return ExitCode.ok;
+    }),
+  );
+
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.once(signal, () => {
     void import("../core/replay/docker.ts")
