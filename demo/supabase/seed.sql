@@ -20,3 +20,8 @@ insert into public.blog_posts (title, body, published_at) values
 insert into public.messages (room_id, author_id, body) values
   (1, '11111111-1111-1111-1111-111111111111', 'hey bob, the launch code is 0000'),
   (1, '22222222-2222-2222-2222-222222222222', 'ha, very funny');
+
+insert into public.direct_messages (sender_id, recipient_id, body) values
+  ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 'the acquisition closes friday. do NOT tell anyone'),
+  ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'my lips are sealed'),
+  ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 'new wifi password is correct-horse-battery-staple');
