@@ -60,16 +60,46 @@ describe("renderDiffMarkdown", () => {
     expect(md).not.toContain("](https://evil");
   });
 
-  it("reports what was resolved since the previous push via the hidden state", () => {
+  it("keeps showing what the PR fixed, across later pushes", () => {
     const first = renderDiffMarkdown(diffReports(report([]), report([leak])), { failOn: "error" });
-    const previous = decodeState(first);
-    expect(previous?.new).toHaveLength(1);
-    const second = renderDiffMarkdown(diffReports(report([]), report([])), {
+    expect(decodeState(first)?.new).toHaveLength(1);
+
+    const fixedPush = renderDiffMarkdown(diffReports(report([]), report([])), {
       failOn: "error",
-      previous,
+      previous: decodeState(first),
     });
-    expect(second).toContain("✅ Lintel: no new findings");
-    expect(second).toContain("1 resolved since last push");
+    expect(fixedPush).toContain("✅ Lintel: no new findings");
+    expect(fixedPush).toContain("1 fixed in this PR");
+
+    // An unrelated later push must not forget the fix.
+    const laterPush = renderDiffMarkdown(diffReports(report([]), report([])), {
+      failOn: "error",
+      previous: decodeState(fixedPush),
+    });
+    expect(laterPush).toContain("1 fixed in this PR");
+  });
+
+  it("drops a fix from the list if the PR reintroduces the finding", () => {
+    const fixedPush = renderDiffMarkdown(diffReports(report([]), report([])), {
+      failOn: "error",
+      previous: { new: [["advisor:leak", "x"]], fixed: [] },
+    });
+    const again = renderDiffMarkdown(diffReports(report([]), report([leak])), {
+      failOn: "error",
+      previous: decodeState(fixedPush),
+    });
+    expect(again).not.toContain("fixed in this PR");
+    expect(again).toContain("1 new finding");
+  });
+
+  it("links Lintel's own docs but not arbitrary hosts", () => {
+    const probe = {
+      ...leak,
+      remediation: "https://github.com/Amsozzer1/lintel/blob/main/docs/probes.md#p001",
+    };
+    expect(
+      renderDiffMarkdown(diffReports(report([]), report([probe])), { failOn: "error" }),
+    ).toContain("[docs](https://github.com/Amsozzer1/lintel/blob/main/docs/probes.md#p001)");
   });
 
   it("stays under GitHub's comment size limit", () => {

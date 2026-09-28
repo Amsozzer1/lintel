@@ -2,6 +2,7 @@
  * Markdown for PR comments. Every value that came from a database (identifiers, details)
  * is untrusted: a table can be named `</details><img src=…>` or `@everyone`.
  */
+import { DOCS_BASE } from "../../core/errors.ts";
 import type { Diff, FailOn, Finding } from "../../core/findings.ts";
 import { atOrAbove } from "../../core/findings.ts";
 
@@ -11,16 +12,21 @@ const MAX_LENGTH = 60_000;
 const ZWSP = "​";
 const LEVEL_ICON = { error: "🔴 error", warn: "🟠 warn", info: "🔵 info" } as const;
 
-export interface PreviousState {
-  /** Fingerprint + short label of each finding that was new on the previous run. */
-  new: Array<[fingerprint: string, label: string]>;
+type Entry = [fingerprint: string, label: string];
+
+/** Carried between runs in the comment's hidden marker. */
+export interface CommentState {
+  /** Findings that were new on this run. */
+  new: Entry[];
+  /** Findings this PR introduced on an earlier push and has since fixed. Accumulates across pushes. */
+  fixed: Entry[];
 }
 
 export interface MarkdownOptions {
   failOn: FailOn;
   baseLabel?: string;
   headLabel?: string;
-  previous?: PreviousState | undefined;
+  previous?: CommentState | undefined;
   suppressionsAdded?: string[];
 }
 
@@ -50,10 +56,14 @@ export function objectLabel(f: Finding): string {
   return [schema, name].filter(Boolean).join(".") || "(database)";
 }
 
+const SAFE_URL = /^[\w\-./?=&#%:]*$/;
+
+/** Only link to Supabase's docs or Lintel's own; anything else is untrusted text. */
 function remediationLink(f: Finding): string {
-  if (f.remediation && /^https:\/\/supabase\.com\/[\w\-./?=&#%]*$/.test(f.remediation)) {
-    return `[docs](${f.remediation})`;
-  }
+  const url = f.remediation;
+  if (!url || !SAFE_URL.test(url)) return "";
+  if (url.startsWith("https://supabase.com/") || url.startsWith(`${DOCS_BASE}/`))
+    return `[docs](${url})`;
   return "";
 }
 
@@ -73,36 +83,54 @@ function row(f: Finding): string {
 /** Budget for the hidden state so it can never push the comment over GitHub's limit. */
 const STATE_BUDGET = 16_000;
 
-export function encodeState(diff: Diff): string {
-  const state: PreviousState = { new: [] };
-  let size = 0;
-  for (const f of diff.new) {
-    const entry: [string, string] = [f.fingerprint, `${f.rule} on ${objectLabel(f)}`.slice(0, 120)];
-    // base64 grows by 4/3; stop before the budget rather than truncating mid-entry.
-    size += Math.ceil((JSON.stringify(entry).length + 1) * (4 / 3));
-    if (size > STATE_BUDGET) break;
-    state.new.push(entry);
+const entryOf = (f: Finding): Entry => [
+  f.fingerprint,
+  `${f.rule} on ${objectLabel(f)}`.slice(0, 120),
+];
+
+/** What this PR has fixed so far: everything it introduced earlier that is no longer new. */
+export function nextState(diff: Diff, previous: CommentState | undefined): CommentState {
+  const currentNew = new Set(diff.new.map((f) => f.fingerprint));
+  const fixed = new Map<string, string>();
+  for (const [fp, label] of [...(previous?.fixed ?? []), ...(previous?.new ?? [])]) {
+    if (!currentNew.has(fp)) fixed.set(fp, label);
   }
-  return Buffer.from(JSON.stringify(state)).toString("base64url");
+  return { new: diff.new.map(entryOf), fixed: [...fixed] };
+}
+
+export function encodeState(state: CommentState): string {
+  const kept: CommentState = { new: [], fixed: [] };
+  let size = 0;
+  for (const key of ["new", "fixed"] as const) {
+    for (const entry of state[key]) {
+      // base64 grows by 4/3; stop before the budget rather than truncating mid-entry.
+      size += Math.ceil((JSON.stringify(entry).length + 1) * (4 / 3));
+      if (size > STATE_BUDGET) break;
+      kept[key].push(entry);
+    }
+  }
+  return Buffer.from(JSON.stringify(kept)).toString("base64url");
 }
 
 /** Parse the state from a previous comment body. Defensive: returns undefined on anything unexpected. */
-export function decodeState(body: string): PreviousState | undefined {
+export function decodeState(body: string): CommentState | undefined {
   const m = /<!-- lintel:v1 ([A-Za-z0-9_-]{0,200000}) -->/.exec(body);
   if (!m?.[1]) return undefined;
   try {
     const parsed: unknown = JSON.parse(Buffer.from(m[1], "base64url").toString("utf8"));
-    if (
-      typeof parsed !== "object" ||
-      parsed === null ||
-      !Array.isArray((parsed as PreviousState).new)
-    )
-      return undefined;
-    const entries = (parsed as PreviousState).new.filter(
-      (e): e is [string, string] =>
-        Array.isArray(e) && typeof e[0] === "string" && typeof e[1] === "string",
-    );
-    return { new: entries.slice(0, 1000) };
+    if (typeof parsed !== "object" || parsed === null) return undefined;
+    const entries = (v: unknown): Entry[] =>
+      Array.isArray(v)
+        ? v
+            .filter(
+              (e): e is Entry =>
+                Array.isArray(e) && typeof e[0] === "string" && typeof e[1] === "string",
+            )
+            .slice(0, 1000)
+        : [];
+    const { new: n, fixed } = parsed as Record<string, unknown>;
+    if (!Array.isArray(n)) return undefined;
+    return { new: entries(n), fixed: entries(fixed) };
   } catch {
     return undefined;
   }
@@ -110,10 +138,10 @@ export function decodeState(body: string): PreviousState | undefined {
 
 export function renderDiffMarkdown(diff: Diff, opts: MarkdownOptions): string {
   const failing = atOrAbove(diff.new, opts.failOn);
-  const currentNew = new Set(diff.new.map((f) => f.fingerprint));
-  const resolvedSincePush = (opts.previous?.new ?? []).filter(([fp]) => !currentNew.has(fp));
+  const state = nextState(diff, opts.previous);
+  const fixed = state.fixed;
 
-  const lines: string[] = [`${COMMENT_MARKER} ${encodeState(diff)} -->`];
+  const lines: string[] = [`${COMMENT_MARKER} ${encodeState(state)} -->`];
   const count = diff.new.length;
   lines.push(
     failing.length > 0
@@ -148,18 +176,17 @@ export function renderDiffMarkdown(diff: Diff, opts: MarkdownOptions): string {
   }
 
   const summary: string[] = [];
-  if (resolvedSincePush.length)
-    summary.push(`✅ **${resolvedSincePush.length} resolved since last push**`);
+  if (fixed.length) summary.push(`✅ **${fixed.length} fixed in this PR**`);
   if (diff.resolved.length) summary.push(`${diff.resolved.length} resolved vs base`);
   summary.push(`${diff.unchanged.length} unchanged`);
   lines.push("", summary.join(" · "));
 
-  if (resolvedSincePush.length) {
+  if (fixed.length) {
     lines.push(
       "",
-      "<details><summary>Resolved since last push</summary>",
+      "<details><summary>Fixed in this PR</summary>",
       "",
-      ...resolvedSincePush.map(([, label]) => `- ${mdText(label)}`),
+      ...fixed.map(([, label]) => `- ${mdText(label)}`),
       "",
       "</details>",
     );
