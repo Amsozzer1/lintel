@@ -157,7 +157,7 @@ a:hover {
   padding-bottom: 64px;
 }
 
-@media (min-width: 1000px) {
+@media (min-width: 1180px) {
   .doorway {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     gap: 72px;
@@ -165,7 +165,7 @@ a:hover {
 }
 
 /* In one column, what comes through goes first: the first screen shows the finding. */
-@media (max-width: 999px) {
+@media (max-width: 1179px) {
   .side-output {
     order: -1;
   }

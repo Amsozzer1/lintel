@@ -10,8 +10,8 @@ export interface Example {
 }
 
 const USERS = `insert into auth.users (id, email) values
-  ('11111111-1111-1111-1111-111111111111', 'ada@x.dev'),
-  ('22222222-2222-2222-2222-222222222222', 'bob@x.dev');
+  ('11111111-1111-1111-1111-111111111111', 'ada@example.com'),
+  ('22222222-2222-2222-2222-222222222222', 'bob@example.com');
 `;
 
 const INVOICES = `create table public.invoices (
@@ -72,8 +72,8 @@ create policy "anyone can send feedback"
   with check (true);
 `,
     seed: `insert into public.feedback (email, message) values
-  ('ada@x.dev', 'the export button is broken again'),
-  ('bob@x.dev', 'please add dark mode');
+  ('ada@example.com', 'the export button is broken again'),
+  ('bob@example.com', 'please add dark mode');
 `,
   },
   {
