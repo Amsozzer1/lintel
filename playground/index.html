@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Lintel playground</title>
+    <meta
+      name="description"
+      content="Paste a Supabase migration and see what the public anon key could read. Runs entirely in your browser."
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+    <script type="module" src="./src/main.ts"></script>
+  </head>
+  <body>
+    <header class="masthead">
+      <p class="wordmark">Lintel <span class="wordmark-sub">playground</span></p>
+      <p class="lede">
+        Paste a Supabase migration and a few seed rows. Lintel applies them to Postgres, runs
+        Supabase’s linter, then reads every table as the public anon key.
+      </p>
+      <p class="privacy">Runs entirely in this tab. Nothing you paste is sent anywhere.</p>
+      <p id="engine" class="engine" aria-hidden="true"></p>
+    </header>
+
+    <main class="doorway">
+      <section class="side side-input" aria-labelledby="migration-label">
+        <div class="beam" aria-hidden="true"></div>
+        <div class="head">
+          <label id="migration-label" class="label" for="migration">Migration</label>
+          <p class="examples" id="examples"><span class="examples-lead">Examples</span></p>
+        </div>
+        <textarea
+          id="migration"
+          class="editor editor-migration"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          placeholder="create table public.notes (…);"
+        ></textarea>
+
+        <div class="head head-seed">
+          <label class="label" for="seed">Seed</label>
+          <p class="hint">Rows the probe tries to read as anon</p>
+        </div>
+        <textarea
+          id="seed"
+          class="editor editor-seed"
+          spellcheck="false"
+          autocapitalize="off"
+          autocomplete="off"
+          placeholder="insert into public.notes values (…);"
+        ></textarea>
+
+        <div class="actions">
+          <button id="run" class="run" type="button" disabled>Check</button>
+          <p id="status" class="status" role="status"></p>
+        </div>
+      </section>
+
+      <section class="side side-output" aria-labelledby="findings-label">
+        <div id="output-beam" class="beam" aria-hidden="true"><div id="beam-fill" class="beam-fill"></div></div>
+        <div class="head">
+          <h2 id="findings-label" class="label">Findings</h2>
+          <p id="meta" class="hint"></p>
+        </div>
+        <div id="results" class="results" aria-live="polite">
+          <p class="empty">Nothing checked yet.</p>
+          <p class="empty empty-more">
+            Pick an example or paste your own, then Check. Findings show up here the way the CLI
+            prints them.
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="colophon">
+      <p class="limits">
+        The CLI does more than this page can. It compares your branch against main, replays into
+        Supabase’s real Postgres image instead of PGlite, and runs extensions like
+        <span class="inline-code">pg_cron</span> for real. Here they are stubs that do nothing. On a
+        repo:
+        <span class="inline-code">npx @amsozzer/lintel migrations check</span>
+      </p>
+      <p class="credits">
+        <a href="https://github.com/Amsozzer1/lintel">Lintel</a>, MIT. Set in Charter and Commit
+        Mono. Postgres runs as <a href="https://pglite.dev">PGlite</a>.
+        <a href="./licenses/README.txt">Third-party licenses</a>.
+      </p>
+    </footer>
+  </body>
+</html>

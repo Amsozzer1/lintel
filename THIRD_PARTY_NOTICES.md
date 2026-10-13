@@ -30,6 +30,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+The browser playground (`playground/`) also ships the Supabase linter (splinter) SQL that Supabase CLI v2.118.0 runs for `supabase db advisors`, taken from `apps/cli/src/commands/db/advisors/advisors.lints-sql.ts` (`apps/cli/package.json`: `"license": "MIT"`). See `playground/src/lints.generated.ts`.
+
+## Supabase Postgres image extensions
+
+`src/core/supabase/extensions.generated.ts` lists the extensions in `supabase/postgres:17.6.1.013` and, for the ones the playground stubs, their object names and function signatures, read from the image's catalog. The stubs contain no code from those extensions: every body is empty.
+
 ## Supabase Auth
 
 `src/core/supabase/environment.generated.ts` contains a schema dump of the `auth` schema produced by the migrations of Supabase Auth v2.197.0, https://github.com/supabase/auth.

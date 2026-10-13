@@ -1,0 +1,1 @@
+The feasibility spike (see ../FEASIBILITY.md), kept as it was. Its hand-written bootstrap and stubs were replaced by the generated environment in `src/core/supabase/`; nothing in the playground build uses this folder.
