@@ -103,7 +103,12 @@ Design choices:
 - **Same rules as `supabase db push`.** Only files named `<digits>_name.sql` are applied (others are listed as skipped), each in one transaction, in name order.
 - **Extensions:** replays use Supabase's Postgres 17 image, so extensions it doesn't ship (e.g. `timescaledb`) fail to apply.
 - **`pgsodium` in old dumps:** schema dumps from projects that had `pgsodium` enabled contain `create extension if not exists "pgsodium" with schema "pgsodium"`. On a fresh database that fails, because `with schema` needs the schema to exist already. Drop the `with schema "pgsodium"` part: the extension always installs into `pgsodium`.
-- **Proof needs rows.** Probes prove a leak only for tables with rows (from `seed.sql`). Empty tables are reported as unverified, never as passing.
+- **Proof needs rows.** Probes prove a leak only for tables with rows (from `seed.sql`). Empty tables are reported as unverified, never as passing. `lintel check` lists each one:
+
+  ```
+    -     public.notes P001 [unverified_no_rows]
+          anon can query it, but it has no rows, so P001 can't prove whether RLS hides them. Add rows to seed.sql.
+  ```
 
 ## Credits
 
