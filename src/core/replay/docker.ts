@@ -138,9 +138,17 @@ async function ensureImage(image: string, opts: StartOptions): Promise<void> {
       next: "lintel setup",
     });
   }
-  opts.onProgress?.("pulling the Supabase Postgres image (one time, about 800 MB)…");
-  await pullImage(image);
+  // Base and head start in parallel: share one pull (and one progress message) per image.
+  let pull = pulls.get(image);
+  if (!pull) {
+    opts.onProgress?.("pulling the Supabase Postgres image (one time, about 800 MB)…");
+    pull = pullImage(image).finally(() => pulls.delete(image));
+    pulls.set(image, pull);
+  }
+  await pull;
 }
+
+const pulls = new Map<string, Promise<void>>();
 
 /**
  * Supabase's init scripts restart the server partway through, so `pg_isready` passes too early.

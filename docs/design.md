@@ -35,7 +35,7 @@ src/cli   src/mcp   src/api     ← surfaces; core never imports them (enforced 
 ```
 
 - One npm package. dependency-cruiser enforces the layering and fails if it analyzes zero modules.
-- Subcommands load lazily: `lintel --help` starts in about 25 ms.
+- Subcommands load lazily, so `lintel --help` never loads pg, Docker or MCP code: about 38 ms wall-clock, 24 ms of it Node startup (Apple M4, Node 24.21).
 
 ## 4. Replaying migrations (the PR engine)
 

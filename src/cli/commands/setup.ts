@@ -14,11 +14,8 @@ export async function setup(): Promise<number> {
 
 export async function doctor(opts: { cleanup?: boolean }): Promise<number> {
   const rows: Array<[string, boolean, string]> = [];
-  rows.push([
-    "node >= 22",
-    Number(process.versions.node.split(".")[0]) >= 22,
-    process.versions.node,
-  ]);
+  const [major = 0, minor = 0] = process.versions.node.split(".").map(Number);
+  rows.push(["node >= 22.12", major > 22 || (major === 22 && minor >= 12), process.versions.node]);
   const dockerInfo = await execa("docker", ["info", "--format", "{{.ServerVersion}}"], {
     reject: false,
   }).catch(() => undefined);
