@@ -2,7 +2,7 @@
 
 <!-- Generated from src/core/errors.ts by `pnpm gen`. Do not edit by hand. -->
 
-Every Lintel error has a stable code. The CLI prints it with a hint and exits with the code below; the MCP server returns it as `{ error: { code, message, hint, docs_url } }` in a tool result with `isError: true`.
+Every Lintel error has a stable code. The CLI prints it with a hint and exits with the code below; the MCP server returns it as `{ error: { code, message, hint, docs_url, details, migration } }` in a tool result with `isError: true`. `details` is the underlying error text; `migration` (only for `LINTEL_E_MIGRATION`) gives the file, statement number, line, column and Postgres's error fields.
 
 | Code | Exit | Meaning |
 |---|---|---|
@@ -82,8 +82,10 @@ A git ref or path could not be read. Exit code 2.
 
 A migration failed to apply. Exit code 5.
 
-- The error names the migration and includes Postgres's message. Reproduce it with `supabase db reset`.
+- The error names the file, the statement and its line, and includes Postgres's own message (`details`, and `migration` in JSON and MCP output). Reproduce it with `supabase db reset`.
+- `relation … does not exist` (or a missing column, function or schema): the object was created outside your migrations, usually in the Supabase dashboard, so a database built only from migrations doesn't have it. Capture it with `supabase db pull`. Lintel exits 5 here on purpose: `supabase db reset` fails the same way.
 - A migration that depends on data or extensions from outside the repo will fail on a fresh database. Put what it needs in an earlier migration or `seed.sql`.
+- Lintel applies migrations like `supabase db push`: only files named `<digits>_name.sql`, in name order, each in one transaction (`CREATE INDEX CONCURRENTLY` and similar statements run on their own).
 
 ## LINTEL_E_INTERNAL
 

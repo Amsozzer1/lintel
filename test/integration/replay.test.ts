@@ -81,6 +81,85 @@ describe("checkMigrations", () => {
     expect((err as LintelError).message).toContain("20260903000000_broken.sql");
   });
 
+  it("has the auth and storage schemas a real project has (Auth and Storage migrations)", async () => {
+    const repo = await demoRepo();
+    const head = await repo.commit(
+      `insert into storage.buckets (id, name, public, file_size_limit) values ('avatars', 'avatars', true, 1048576);
+       create policy "avatars are public" on storage.objects for select using (bucket_id = 'avatars' and (storage.foldername(name))[1] is not null);
+       create view public.user_providers as select user_id, provider from auth.identities;`,
+      "20260903000000_storage.sql",
+    );
+    const { head: report } = await checkMigrations({
+      repoDir: repo.dir,
+      baseRef: "base",
+      headRef: head,
+    });
+    expect(report.target.label).toMatch(/^head@/);
+  });
+
+  it("applies each file in one transaction, with CREATE INDEX CONCURRENTLY on its own", async () => {
+    const repo = await demoRepo();
+    const head = await repo.commit(
+      `create temporary table staging on commit drop as select 1 as id;
+       create table public.copied as select id from staging;
+       create index concurrently copied_id_idx on public.copied (id);`,
+      "20260903000000_tx.sql",
+    );
+    await expect(
+      checkMigrations({ repoDir: repo.dir, baseRef: "base", headRef: head }),
+    ).resolves.toBeDefined();
+  });
+
+  it("resets the session between files, like supabase db push", async () => {
+    const repo = await demoRepo();
+    await repo.commit(
+      "select pg_catalog.set_config('search_path', '', false);",
+      "20260903000000_dump.sql",
+    );
+    const head = await repo.commit(
+      "create table public.tokens (id uuid primary key default uuid_generate_v4());",
+      "20260904000000_tokens.sql",
+    );
+    await expect(
+      checkMigrations({ repoDir: repo.dir, baseRef: "base", headRef: head }),
+    ).resolves.toBeDefined();
+  });
+
+  it("skips files Supabase wouldn't apply, and says so", async () => {
+    const repo = await demoRepo();
+    const head = await repo.commit("this is not sql;", "notes.sql");
+    const { skipped } = await checkMigrations({
+      repoDir: repo.dir,
+      baseRef: "base",
+      headRef: head,
+    });
+    expect(skipped).toEqual({ base: [], head: ["notes.sql"] });
+  });
+
+  it("names an object created outside migrations, with Postgres's error and the line", async () => {
+    const repo = await demoRepo();
+    const head = await repo.commit(
+      "-- adds an index\ncreate index contacts_email_idx on public.contacts (email);\n",
+      "20260903000000_contacts.sql",
+    );
+    const err = (await checkMigrations({ repoDir: repo.dir, baseRef: "base", headRef: head }).catch(
+      (e: unknown) => e,
+    )) as LintelError;
+    expect(err.code).toBe("LINTEL_E_MIGRATION");
+    expect(err.message).toBe(
+      "head@" +
+        head.slice(0, 7) +
+        ': migration 20260903000000_contacts.sql failed to apply (line 2): relation "public.contacts" does not exist',
+    );
+    expect(err.likelyCause).toContain("dashboard");
+    expect(err.toJSON().migration).toMatchObject({
+      file: "20260903000000_contacts.sql",
+      statement: 1,
+      line: 2,
+      postgres: { code: "42P01", message: 'relation "public.contacts" does not exist' },
+    });
+  });
+
   it("explains an unknown base ref", async () => {
     const repo = await demoRepo();
     const err = await checkMigrations({ repoDir: repo.dir, baseRef: "origin/nope" }).catch(

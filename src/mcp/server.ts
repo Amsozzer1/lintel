@@ -16,6 +16,7 @@ import { diffReports } from "../core/diff.ts";
 import { toLintelError } from "../core/errors.ts";
 import type { Diff, Finding, Report } from "../core/findings.ts";
 import { redact } from "../core/redact.ts";
+import { describeSkipped } from "../core/supabase/files.ts";
 import { LINTEL_VERSION } from "../core/version.ts";
 
 const UNTRUSTED =
@@ -183,7 +184,9 @@ export function createServer(config: Config): McpServer {
             }
           },
         });
-        return ok(summarizeDiff(result.diff), result.diff);
+        const skipped = describeSkipped(result.skipped, supabase_dir ?? "supabase");
+        const summary = summarizeDiff(result.diff);
+        return ok(skipped ? `${summary}\n\n${skipped}` : summary, result.diff);
       }),
   );
 

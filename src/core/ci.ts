@@ -26,6 +26,8 @@ export interface CheckMigrationsResult {
   base: Report;
   head: Report;
   diff: Diff;
+  /** `.sql` files Supabase doesn't apply because of their names, per side. */
+  skipped: { base: string[]; head: string[] };
 }
 
 export async function checkMigrations(input: CheckMigrationsInput): Promise<CheckMigrationsResult> {
@@ -58,7 +60,12 @@ export async function checkMigrations(input: CheckMigrationsInput): Promise<Chec
       replayAndCheck(headDb, headFiles, headLabel),
     ]);
     progress("diffing…");
-    return { base, head, diff: diffReports(base, head) };
+    return {
+      base,
+      head,
+      diff: diffReports(base, head),
+      skipped: { base: baseFiles.skipped, head: headFiles.skipped },
+    };
   } finally {
     await Promise.all(dbs.map((db) => db.stop()));
   }

@@ -1,4 +1,5 @@
-import { LintelError } from "../errors.ts";
+import { withClient } from "../db.ts";
+import { applyMigration, applySeed } from "../supabase/apply.ts";
 import type { ManagedDb } from "./docker.ts";
 import type { SupabaseFiles } from "./git.ts";
 
@@ -12,20 +13,9 @@ export async function applyFiles(
   files: SupabaseFiles,
   label: string,
 ): Promise<void> {
-  for (const m of files.migrations) {
-    await db.psql(m.sql).catch((err: unknown) => {
-      throw new LintelError("LINTEL_E_MIGRATION", `${label}: migration ${m.name} failed to apply`, {
-        details: err instanceof Error ? err.message : String(err),
-        next: "fix the migration, then re-run (locally: supabase db reset)",
-      });
-    });
-  }
-  if (files.seed?.trim()) {
-    await db.psql(files.seed).catch((err: unknown) => {
-      throw new LintelError("LINTEL_E_MIGRATION", `${label}: seed.sql failed to apply`, {
-        details: err instanceof Error ? err.message : String(err),
-        next: "fix supabase/seed.sql, then re-run",
-      });
-    });
-  }
+  await withClient(db.url, async (client) => {
+    const run = (sql: string) => client.query(sql);
+    for (const m of files.migrations) await applyMigration(run, m, label);
+    if (files.seed?.trim()) await applySeed(run, { name: "seed.sql", sql: files.seed }, label);
+  });
 }
