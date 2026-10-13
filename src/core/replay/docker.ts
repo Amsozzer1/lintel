@@ -7,6 +7,7 @@ import { setTimeout as sleep } from "node:timers/promises";
 import { execa } from "execa";
 import { LintelError } from "../errors.ts";
 import { redact, registerSecret } from "../redact.ts";
+import { CONTAINER_SETUP_SQL } from "../supabase/environment.ts";
 
 export const DEFAULT_IMAGE =
   "supabase/postgres:17.6.1.013@sha256:d4cb9da1a55b2ea7c64b9d60b14836432a6d01cced5cf1b9dd51f4ab51ff94db";
@@ -171,19 +172,13 @@ async function waitReady(psql: ManagedDb["psql"], timeoutMs = 120_000): Promise<
   });
 }
 
-/** The image predates `auth.jwt()` (it ships with the auth server). Stub it when missing so policies that call it apply. */
+/**
+ * The image's init scripts create `auth` and `storage` as they were years ago; on a real project,
+ * Supabase Auth and Storage migrate them when they start. Replace them with the migrated schemas
+ * so migrations that use `storage.buckets.public` or `auth.identities` apply.
+ */
 async function bootstrap(psql: ManagedDb["psql"]): Promise<void> {
-  await psql(
-    `do $$ begin
-       if to_regprocedure('auth.jwt()') is null then
-         create function auth.jwt() returns jsonb language sql stable as
-         $f$ select coalesce(nullif(current_setting('request.jwt.claim', true), ''),
-                             nullif(current_setting('request.jwt.claims', true), ''))::jsonb $f$;
-         grant execute on function auth.jwt() to anon, authenticated, service_role;
-       end if;
-     end $$;`,
-    "supabase_admin",
-  );
+  await psql(CONTAINER_SETUP_SQL, "supabase_admin");
 }
 
 async function docker(args: string[], env: Record<string, string> = {}): Promise<string> {
