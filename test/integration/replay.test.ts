@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { runChecks } from "../../src/core/check.ts";
 import { checkMigrations } from "../../src/core/ci.ts";
 import { LintelError } from "../../src/core/errors.ts";
+import type { Diff } from "../../src/core/findings.ts";
 import { type ManagedDb, startDb } from "../../src/core/replay/docker.ts";
 import { demoRepo, FIXED_MESSAGES, LEAKY_MESSAGES } from "../helpers/repo.ts";
 
@@ -39,6 +40,8 @@ describe("throwaway Supabase database", () => {
     ).not.toContain("definitely-wrong-pw");
   });
 });
+
+const newRules = (diff: Diff) => diff.new.map((f) => `${f.rule}:${f.object.name}`);
 
 describe("checkMigrations", () => {
   it("reports the leak a PR introduces as new, and nothing else", async () => {
@@ -86,15 +89,13 @@ describe("checkMigrations", () => {
     const head = await repo.commit(
       `insert into storage.buckets (id, name, public, file_size_limit) values ('avatars', 'avatars', true, 1048576);
        create policy "avatars are public" on storage.objects for select using (bucket_id = 'avatars' and (storage.foldername(name))[1] is not null);
-       create view public.user_providers as select user_id, provider from auth.identities;`,
+       create view public.user_providers as select user_id, provider from auth.identities;
+       create table public.applied_marker (id int primary key);`,
       "20260903000000_storage.sql",
     );
-    const { head: report } = await checkMigrations({
-      repoDir: repo.dir,
-      baseRef: "base",
-      headRef: head,
-    });
-    expect(report.target.label).toMatch(/^head@/);
+    const { diff } = await checkMigrations({ repoDir: repo.dir, baseRef: "base", headRef: head });
+    // The last statement only exists if the whole file applied.
+    expect(newRules(diff)).toContain("rls_disabled_in_public:applied_marker");
   });
 
   it("applies each file in one transaction, with CREATE INDEX CONCURRENTLY on its own", async () => {
@@ -105,9 +106,8 @@ describe("checkMigrations", () => {
        create index concurrently copied_id_idx on public.copied (id);`,
       "20260903000000_tx.sql",
     );
-    await expect(
-      checkMigrations({ repoDir: repo.dir, baseRef: "base", headRef: head }),
-    ).resolves.toBeDefined();
+    const { diff } = await checkMigrations({ repoDir: repo.dir, baseRef: "base", headRef: head });
+    expect(newRules(diff)).toContain("rls_disabled_in_public:copied");
   });
 
   it("resets the session between files, like supabase db push", async () => {
@@ -120,9 +120,8 @@ describe("checkMigrations", () => {
       "create table public.tokens (id uuid primary key default uuid_generate_v4());",
       "20260904000000_tokens.sql",
     );
-    await expect(
-      checkMigrations({ repoDir: repo.dir, baseRef: "base", headRef: head }),
-    ).resolves.toBeDefined();
+    const { diff } = await checkMigrations({ repoDir: repo.dir, baseRef: "base", headRef: head });
+    expect(newRules(diff)).toContain("rls_disabled_in_public:tokens");
   });
 
   it("skips files Supabase wouldn't apply, and says so", async () => {

@@ -95,6 +95,19 @@ function failure(err: unknown, ctx: FailureContext): LintelError {
   if (err instanceof LintelError) return err;
   const e = (err ?? {}) as ServerError;
   const message = e.message ?? String(err);
+  // No SQLSTATE (a socket error) or a connection/shutdown class: the database went away, the
+  // migration didn't fail. Exit 5 would send people to fix SQL that is fine.
+  if (!/^[0-9A-Z]{5}$/.test(e.code ?? "") || /^(08|57P)/.test(e.code ?? "")) {
+    return new LintelError(
+      "LINTEL_E_DOCKER",
+      `${ctx.label}: lost the database connection while applying ${ctx.file.name}`,
+      {
+        cause: "the throwaway database stopped or restarted (often: Docker is out of memory)",
+        next: "retry; if it keeps happening, give Docker more memory",
+        details: message,
+      },
+    );
+  }
   // Without a position (most errors outside parsing), point at the statement's first line of SQL.
   const offset = !ctx.statement
     ? ctx.file.sql.length
@@ -144,14 +157,6 @@ function explain(
   code: string | undefined,
   message: string,
 ): { cause: string; next?: string } | undefined {
-  const missing: Record<string, string> = {
-    "42P01": "relation",
-    "42883": "function",
-    "42704": "object",
-    "3F000": "schema",
-    "42703": "column",
-  };
-  const kind = code ? missing[code] : undefined;
   const type = /^type "([^"]+)" does not exist/.exec(message)?.[1];
   if (type) {
     return {
@@ -159,20 +164,33 @@ function explain(
       next: `enable the extension in an earlier migration, or schema-qualify it (e.g. extensions.${type})`,
     };
   }
-  if (kind) {
-    const column = /column "([^"]+)" of relation "([^"]+)"/.exec(message);
-    const name = column
-      ? `${column[2]}.${column[1]}`
-      : (/"([^"]+)"/.exec(message)?.[1] ?? /^\w+ (.+) does not exist/.exec(message)?.[1] ?? kind);
+  const role = /^role "([^"]+)" does not exist/.exec(message)?.[1];
+  if (role) {
     return {
-      cause: `\`${name}\` doesn't exist when this migration runs, because no earlier migration creates it. It was most likely created in the Supabase dashboard (or by SQL run outside supabase/migrations), so a database built only from your migrations doesn't have it.`,
-      next: "capture it in a migration: supabase db pull   (or: supabase db diff --linked -f <name>)",
+      cause: `role \`${role}\` doesn't exist: roles live outside migrations, so a database built only from your migrations doesn't have it.`,
+      next: "create the role in an earlier migration (supabase db dump --role-only shows yours)",
     };
   }
-  const ext = /extension "([^"]+)" is not available/.exec(message)?.[1];
-  if (ext) {
+  // Tables, columns, functions, schemas and extensions: a dashboard object, or a typo.
+  const column = /column "([^"]+)" of relation "([^"]+)"/.exec(message);
+  const ext = /^extension "([^"]+)" does not exist/.exec(message)?.[1];
+  const missing = ["42P01", "42883", "3F000", "42703"].includes(code ?? "") || ext;
+  if (missing) {
+    const name = column
+      ? `${column[2]}.${column[1]}`
+      : (ext ??
+        /"([^"]+)"/.exec(message)?.[1] ??
+        /^\w+ (.+) does not exist/.exec(message)?.[1] ??
+        "it");
     return {
-      cause: `Supabase's Postgres 17 image, which Lintel replays into, doesn't ship the \`${ext}\` extension, so this migration can't run on a fresh Supabase database either.`,
+      cause: `\`${name}\` doesn't exist when this migration runs: no earlier migration creates it. Either it was created outside migrations (most often in the Supabase dashboard), so a database built only from your migrations doesn't have it, or the name is misspelled.`,
+      next: "if it exists in your project, capture it in a migration: supabase db pull   (or: supabase db diff --linked -f <name>)",
+    };
+  }
+  const unavailable = /extension "([^"]+)" is not available/.exec(message)?.[1];
+  if (unavailable) {
+    return {
+      cause: `Supabase's Postgres 17 image, which Lintel replays into, doesn't ship the \`${unavailable}\` extension, so this migration can't run on a fresh Supabase database either.`,
       next: "check: select name from pg_available_extensions;   then drop the extension from your migrations or replace it",
     };
   }

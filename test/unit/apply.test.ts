@@ -87,6 +87,32 @@ describe("applyMigration", () => {
     expect(e.next).toContain("supabase db pull");
   });
 
+  it("names a missing role without sending people to db pull", async () => {
+    const { run } = engine(/x/, { message: 'role "reporting" does not exist', code: "42704" });
+    const e = await failure(applyMigration(run, { name: "7_g.sql", sql: "select x;" }, "head"));
+    expect(e.likelyCause).toContain("`reporting`");
+    expect(e.next).not.toContain("db pull");
+  });
+
+  it("doesn't blame the dashboard for other missing objects, such as a constraint", async () => {
+    const { run } = engine(/x/, {
+      message: 'constraint "c" of relation "t" does not exist',
+      code: "42704",
+    });
+    const e = await failure(applyMigration(run, { name: "8_h.sql", sql: "select x;" }, "head"));
+    expect(e.likelyCause).toBeUndefined();
+  });
+
+  it.each([
+    [{ message: "Connection terminated unexpectedly", code: undefined }],
+    [{ message: "terminating connection due to administrator command", code: "57P01" }],
+    [{ message: "read ECONNRESET", code: "ECONNRESET" }],
+  ])("reports a lost connection as a database problem, not a broken migration: %j", async (err) => {
+    const { run } = engine(/x/, err);
+    const e = await failure(applyMigration(run, { name: "9_i.sql", sql: "select x;" }, "head"));
+    expect(e.code).toBe("LINTEL_E_DOCKER");
+  });
+
   it("explains an extension the image doesn't ship", async () => {
     const { run } = engine(/timescaledb/, {
       message: 'extension "timescaledb" is not available',
@@ -108,7 +134,10 @@ describe("applyMigration", () => {
   });
 
   it("reports a failed commit (deferred constraints) as the commit", async () => {
-    const { run } = engine(/^commit$/, { message: "violates foreign key constraint" });
+    const { run } = engine(/^commit$/, {
+      message: "violates foreign key constraint",
+      code: "23503",
+    });
     const e = await failure(applyMigration(run, { name: "6_f.sql", sql: "select 1;" }, "head"));
     expect(e.message).toContain("(commit)");
   });
