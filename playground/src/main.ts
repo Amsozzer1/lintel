@@ -62,7 +62,9 @@ function startWorker(): void {
   worker = new Worker(new URL("./worker.ts", import.meta.url), { type: "module" });
   worker.onmessage = (ev: MessageEvent<ToPage>) => onMessage(ev.data);
   worker.onerror = () => showStatus("The engine failed to start. Reload the page to try again.");
-  post({ type: "boot", base: document.baseURI });
+  // The build's base path, not the page URL: served as /lintel (no trailing slash), relative
+  // URLs would resolve against the site root.
+  post({ type: "boot", base: new URL(import.meta.env.BASE_URL, location.href).href });
   beam.classList.add("loading");
   beamFill.style.width = "0";
   showStatus("Loading Postgres…");

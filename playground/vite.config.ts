@@ -127,11 +127,14 @@ function cloudflareHeaders(): Plugin {
       writeFileSync(
         new URL("dist/_headers", import.meta.url),
         [
-          `${BASE}*`,
-          `  Content-Security-Policy: ${CSP}; frame-ancestors 'none'`,
-          "  X-Content-Type-Options: nosniff",
-          "  Referrer-Policy: no-referrer",
-          "",
+          // `${BASE}*` doesn't match the page itself when the host drops the trailing slash.
+          ...[BASE.replace(/\/$/, ""), `${BASE}*`].flatMap((path) => [
+            path,
+            `  Content-Security-Policy: ${CSP}; frame-ancestors 'none'`,
+            "  X-Content-Type-Options: nosniff",
+            "  Referrer-Policy: no-referrer",
+            "",
+          ]),
           `${BASE}assets/*`,
           immutable,
           "",
