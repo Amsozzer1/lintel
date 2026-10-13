@@ -101,12 +101,21 @@ a:hover {
 }
 
 .masthead {
-  padding-top: 44px;
-  padding-bottom: 40px;
+  padding-top: 30px;
+  padding-bottom: 28px;
+}
+
+.masthead-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 24px;
+  margin-bottom: 10px;
 }
 
 .wordmark {
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 22px;
   line-height: 1.2;
   font-weight: 700;
@@ -117,9 +126,18 @@ a:hover {
   color: var(--graphite);
 }
 
+.repo {
+  font-size: 14px;
+  letter-spacing: 0.008em;
+  color: var(--pencil);
+}
+.repo:hover {
+  color: var(--ink);
+}
+
 .lede {
-  max-width: 34em;
-  margin: 0 0 6px;
+  max-width: 48em;
+  margin: 0 0 4px;
   color: var(--graphite);
 }
 
@@ -128,23 +146,6 @@ a:hover {
   font-size: 14px;
   letter-spacing: 0.008em;
   color: var(--pencil);
-}
-
-/* Loading, for the one-column layout, where the findings beam is far below the fold. */
-.engine {
-  margin: 10px 0 0;
-  font-size: 14px;
-  letter-spacing: 0.008em;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.engine:empty {
-  display: none;
-}
-@media (min-width: 1000px) {
-  .engine {
-    display: none;
-  }
 }
 
 /* ---- The doorway: input on the left, what comes through on the right. ---- */
@@ -163,10 +164,17 @@ a:hover {
   }
 }
 
+/* In one column, what comes through goes first: the first screen shows the finding. */
+@media (max-width: 999px) {
+  .side-output {
+    order: -1;
+  }
+}
+
 .beam {
   height: var(--beam);
   background: var(--ink);
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .head {
@@ -175,10 +183,10 @@ a:hover {
   align-items: baseline;
   justify-content: space-between;
   gap: 4px 20px;
-  margin-bottom: 12px;
+  margin-bottom: 10px;
 }
 .head-seed {
-  margin-top: 28px;
+  margin-top: 22px;
 }
 
 .label {
@@ -262,11 +270,15 @@ a:hover {
 .editor:focus-visible {
   outline-offset: 0;
 }
+/*
+ * Heights follow the window so Check stays on screen at 1280×720: 8 to 18 lines for the
+ * migration (one line is 13.5px × 1.6), 5 for the seed. Both still resize.
+ */
 .editor-migration {
-  min-height: 300px;
+  height: clamp(200px, calc(100svh - 500px), 417px);
 }
 .editor-seed {
-  min-height: 132px;
+  height: 136px;
 }
 
 .actions {
@@ -274,7 +286,7 @@ a:hover {
   flex-wrap: wrap;
   align-items: baseline;
   gap: 8px 18px;
-  margin-top: 26px;
+  margin-top: 18px;
 }
 
 .run {
@@ -466,11 +478,17 @@ a:hover {
     gap: 44px;
   }
   .editor-migration {
-    min-height: 240px;
+    height: 300px;
   }
   .results,
   .editor {
     font-size: 13px;
+  }
+  /* On a phone, pasted SQL wraps rather than scrolling sideways inside the box. */
+  .editor {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow-x: hidden;
   }
   .inline-code {
     white-space: normal;

@@ -15,7 +15,6 @@ const beam = $<HTMLDivElement>("output-beam");
 const beamFill = $<HTMLDivElement>("beam-fill");
 const results = $<HTMLDivElement>("results");
 const meta = $<HTMLParagraphElement>("meta");
-const engineLine = $<HTMLParagraphElement>("engine");
 
 let worker: Worker;
 let ready = false;
@@ -40,10 +39,20 @@ EXAMPLES.forEach((ex, i) => {
   });
   examples.append(b);
 });
-const markExample = (id?: string) => {
+// The first screen shows a real finding with zero clicks: the leaky example runs once Postgres is ready.
+const FIRST = EXAMPLES[0];
+let runWhenReady = false;
+if (FIRST) {
+  migration.value = FIRST.migration;
+  seed.value = FIRST.seed;
+  runWhenReady = true;
+}
+
+function markExample(id?: string): void {
   for (const b of examples.querySelectorAll<HTMLButtonElement>(".example"))
     b.setAttribute("aria-pressed", String(b.dataset.id === id));
-};
+}
+markExample(FIRST?.id);
 for (const t of [migration, seed]) t.addEventListener("input", () => markExample());
 
 // ---- Engine ----
@@ -68,21 +77,22 @@ function onMessage(m: ToPage): void {
       beamFill.style.width = `${pct}%`;
       showStatus("Postgres is loading…");
       meta.textContent = `loading · ${pct}%`;
-      engineLine.textContent = `Loading Postgres into this tab · ${pct}%`;
       return;
     }
     case "starting":
       showStatus("Starting Postgres and loading Supabase’s roles and schemas…");
       meta.textContent = "starting";
-      engineLine.textContent = "Starting Postgres…";
       return;
     case "ready":
       ready = true;
       beam.classList.remove("loading");
       meta.textContent = "";
-      engineLine.textContent = "";
       runButton.disabled = false;
       showIdle();
+      if (runWhenReady) {
+        runWhenReady = false;
+        run();
+      }
       return;
     case "failed":
       showStatus(`The engine failed to start: ${m.message}`);

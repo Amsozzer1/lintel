@@ -14,13 +14,15 @@
   </head>
   <body>
     <header class="masthead">
-      <p class="wordmark">Lintel <span class="wordmark-sub">playground</span></p>
+      <div class="masthead-top">
+        <p class="wordmark">Lintel <span class="wordmark-sub">playground</span></p>
+        <a class="repo" href="https://github.com/Amsozzer1/lintel">github.com/Amsozzer1/lintel</a>
+      </div>
       <p class="lede">
         Paste a Supabase migration and a few seed rows. Lintel applies them to Postgres, runs
         Supabase’s linter, then reads every table as the public anon key.
       </p>
       <p class="privacy">Runs entirely in this tab. Nothing you paste is sent anywhere.</p>
-      <p id="engine" class="engine" aria-hidden="true"></p>
     </header>
 
     <main class="doorway">
@@ -65,9 +67,9 @@
           <p id="meta" class="hint"></p>
         </div>
         <div id="results" class="results" aria-live="polite">
-          <p class="empty">Nothing checked yet.</p>
+          <p class="empty">The leaky table example runs as soon as Postgres has loaded.</p>
           <p class="empty empty-more">
-            Pick an example or paste your own, then Check. Findings show up here the way the CLI
+            Then pick another example or paste your own. Findings show up here the way the CLI
             prints them.
           </p>
         </div>
