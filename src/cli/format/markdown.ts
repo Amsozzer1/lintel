@@ -5,6 +5,7 @@
 import { DOCS_BASE } from "../../core/errors.ts";
 import type { Diff, FailOn, Finding } from "../../core/findings.ts";
 import { atOrAbove } from "../../core/findings.ts";
+import { objectLabel } from "../../core/report-text.ts";
 
 export const COMMENT_MARKER = "<!-- lintel:v1";
 /** GitHub rejects comments over 65,536 characters. */
@@ -51,10 +52,7 @@ export function mdText(value: string): string {
 
 const code = (value: string) => `<code>${mdText(value)}</code>`;
 
-export function objectLabel(f: Finding): string {
-  const { schema, name } = f.object;
-  return [schema, name].filter(Boolean).join(".") || "(database)";
-}
+export { objectLabel };
 
 const SAFE_URL = /^[\w\-./?=&#%:]*$/;
 
