@@ -1,7 +1,10 @@
-import { createReadStream, readdirSync, readFileSync, statSync } from "node:fs";
+import { createReadStream, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { defineConfig, type Plugin } from "vite";
+
+/** Served at amsozzer.com/lintel/ unless PLAYGROUND_BASE says otherwise. */
+const BASE = process.env.PLAYGROUND_BASE ?? "/lintel/";
 
 /** PGlite's wasm, data and extension bundles, served from this site: no CDN, no third party. */
 const require = createRequire(import.meta.url);
@@ -21,13 +24,18 @@ const NATIVE = Object.keys(FILES)
   .filter((f) => f.endsWith(".bundle"))
   .map((f) => f.replace(/\.bundle$/, ""));
 const SIZES = Object.fromEntries(Object.entries(FILES).map(([f, p]) => [f, statSync(p).size]));
+/** Under PGlite's version, so they can be cached forever: a new version is a new path. */
+const PGLITE_VERSION = JSON.parse(readFileSync(join(pgliteDist, "..", "package.json"), "utf8"))
+  .version as string;
+const PGLITE_DIR = `pglite/${PGLITE_VERSION}/`;
 
 function pgliteAssets(): Plugin {
   return {
     name: "lintel-pglite-assets",
     configureServer(server) {
-      server.middlewares.use("/pglite/", (req, res, next) => {
-        const path = FILES[decodeURIComponent((req.url ?? "").slice(1).split("?")[0] ?? "")];
+      server.middlewares.use((req, res, next) => {
+        const file = /\/pglite\/[^/]+\/([^/?]+)/.exec(req.url ?? "")?.[1];
+        const path = file ? FILES[decodeURIComponent(file)] : undefined;
         if (!path) return next();
         res.setHeader(
           "Content-Type",
@@ -38,7 +46,11 @@ function pgliteAssets(): Plugin {
     },
     generateBundle() {
       for (const [file, path] of Object.entries(FILES))
-        this.emitFile({ type: "asset", fileName: `pglite/${file}`, source: readFileSync(path) });
+        this.emitFile({
+          type: "asset",
+          fileName: `${PGLITE_DIR}${file}`,
+          source: readFileSync(path),
+        });
     },
   };
 }
@@ -101,11 +113,46 @@ function contentSecurityPolicy(): Plugin {
   };
 }
 
+/**
+ * dist/_headers, for Cloudflare Pages or Workers static assets: the same CSP as a header (which can
+ * also forbid framing), and immutable caching for hashed assets and versioned PGlite files.
+ * It sits next to dist/lintel/, ready to copy into the site's output root.
+ */
+function cloudflareHeaders(): Plugin {
+  return {
+    name: "lintel-cloudflare-headers",
+    apply: "build",
+    closeBundle() {
+      const immutable = "  Cache-Control: public, max-age=31536000, immutable";
+      writeFileSync(
+        new URL("dist/_headers", import.meta.url),
+        [
+          `${BASE}*`,
+          `  Content-Security-Policy: ${CSP}; frame-ancestors 'none'`,
+          "  X-Content-Type-Options: nosniff",
+          "  Referrer-Policy: no-referrer",
+          "",
+          `${BASE}assets/*`,
+          immutable,
+          "",
+          `${BASE}pglite/*`,
+          immutable,
+          "",
+        ].join("\n"),
+      );
+    },
+  };
+}
+
 export default defineConfig({
-  base: "./",
-  define: { __PGLITE_NATIVE__: JSON.stringify(NATIVE), __PGLITE_SIZES__: JSON.stringify(SIZES) },
+  base: BASE,
+  define: {
+    __PGLITE_NATIVE__: JSON.stringify(NATIVE),
+    __PGLITE_SIZES__: JSON.stringify(SIZES),
+    __PGLITE_DIR__: JSON.stringify(PGLITE_DIR),
+  },
   worker: { format: "es", plugins: () => [dropUnusedPgliteCopies()] },
   optimizeDeps: { exclude: ["@electric-sql/pglite", "@electric-sql/pglite-pgvector"] },
-  build: { target: "es2022", outDir: "dist", assetsInlineLimit: 0 },
-  plugins: [pgliteAssets(), licenses(), contentSecurityPolicy()],
+  build: { target: "es2022", outDir: `dist${BASE}`, emptyOutDir: true, assetsInlineLimit: 0 },
+  plugins: [pgliteAssets(), licenses(), contentSecurityPolicy(), cloudflareHeaders()],
 });

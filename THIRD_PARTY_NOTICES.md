@@ -30,7 +30,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-The browser playground (`playground/`) also ships the Supabase linter (splinter) SQL that Supabase CLI v2.118.0 runs for `supabase db advisors`, taken from `apps/cli/src/commands/db/advisors/advisors.lints-sql.ts` (`apps/cli/package.json`: `"license": "MIT"`). See `playground/src/lints.generated.ts`.
+The browser playground (`playground/`) also ships the Supabase linter (splinter) SQL that Supabase CLI v2.118.0 runs for `supabase db advisors`:
+
+- **File:** `apps/cli/src/commands/db/advisors/advisors.lints-sql.ts`.
+- **Commit:** supabase/cli 70b42b8bf64b8cf1fd14c02c013d99dd655626e2, which is tag v2.118.0.
+- **License:** MIT. `apps/cli/package.json` declares `"license": "MIT"`, the published `supabase` npm package is MIT, and the text is the MIT license above.
+- **In the bundle:** `playground/src/lints.generated.ts`.
 
 ## Supabase Postgres image extensions
 

@@ -45,7 +45,7 @@ async function boot(base: string): Promise<Engine> {
   const bytes = new Map<string, ArrayBuffer>();
   await Promise.all(
     PRELOAD.map(async (file) => {
-      const res = await fetch(new URL(`pglite/${file}`, base));
+      const res = await fetch(new URL(`${__PGLITE_DIR__}${file}`, base));
       if (!res.ok || !res.body) throw new Error(`could not load ${file}: HTTP ${res.status}`);
       const chunks: Uint8Array<ArrayBuffer>[] = [];
       const reader = res.body.getReader();
@@ -74,7 +74,7 @@ async function boot(base: string): Promise<Engine> {
     native: __PGLITE_NATIVE__,
     url: (file) => {
       const bundle = file.replace(/\.tar\.gz$/, ".bundle");
-      return new URL(blobs.get(bundle) ?? new URL(`pglite/${bundle}`, base).href);
+      return new URL(blobs.get(bundle) ?? new URL(`${__PGLITE_DIR__}${bundle}`, base).href);
     },
     load: async (file) => {
       const b = bytes.get(file);

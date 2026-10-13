@@ -21,9 +21,32 @@ Nothing here decides what a finding is:
 
 `src/engine.ts` wires those to PGlite. `test/render.test.ts` checks that the page prints exactly what `lintel check` prints for the same report.
 
-## Deploying
+## Deploying to amsozzer.com/lintel/
 
-`playground/dist` is a plain static site (about 19 MB on disk, about 5 MB compressed over the wire). The largest file is `pglite/pglite.wasm` at 10 MB, under Cloudflare Pages' 25 MiB per-file limit. Extension bundles are published as `.bundle` rather than `.tar.gz`, so no server adds `Content-Encoding: gzip` to them.
+`pnpm playground:build` writes a site meant to be served under `/lintel/`. Use `PLAYGROUND_BASE=/other/ pnpm playground:build` for a different path.
+
+```
+playground/dist/
+  _headers       Cloudflare headers, scoped to /lintel/
+  lintel/        the site: index.html, assets/, pglite/0.5.8/, licenses/
+```
+
+If amsozzer.com is a Cloudflare Pages project, or a Worker with static assets, built from a folder of files:
+
+1. Copy `playground/dist/lintel/` into the site's output directory as `lintel/`.
+2. Append `playground/dist/_headers` to the site's `_headers` file at the output root, or add that file if there isn't one. All its rules start with `/lintel/`, so nothing else on the site changes.
+
+No route, DNS or Worker change is needed.
+
+What `_headers` sets:
+
+- **Content-Security-Policy:** only this origin may be fetched from. The page carries the same policy as a meta tag; the header also forbids framing.
+- **Immutable caching:**
+  - `/lintel/assets/*`, whose names are content-hashed;
+  - `/lintel/pglite/*`, which lives under PGlite's version, so an upgrade is a new path.
+- **`index.html`** keeps Cloudflare's default (`max-age=0, must-revalidate`), so deploys show up at once.
+
+The site is about 19 MB in 61 files, about 5 MB compressed over the wire. The largest file is `pglite/0.5.8/pglite.wasm` at 10 MB, under the 25 MiB per-file limit. Extension bundles are published as `.bundle` rather than `.tar.gz`, so no server adds `Content-Encoding: gzip` to them.
 
 ## Fonts
 
