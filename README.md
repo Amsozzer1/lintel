@@ -97,6 +97,17 @@ Design choices:
 | 4 | Internal error |
 | 5 | A migration failed to apply |
 
+## Limitations
+
+- **Migrations only.** Lintel checks the database your migrations build, not your live project. Tables, policies or grants created in the Supabase dashboard (or by SQL run outside `supabase/migrations`) aren't in it. When a migration depends on one, the replay fails with exit 5 and names the missing object; `supabase db reset` would fail the same way. Capture dashboard changes with `supabase db pull`.
+- **Same rules as `supabase db push`.** Only files named `<digits>_name.sql` are applied (others are listed as skipped), each in one transaction, in name order.
+- **Extensions:** replays use Supabase's Postgres 17 image, so extensions it doesn't ship (e.g. `timescaledb`) fail to apply.
+- **Proof needs rows.** Probes prove a leak only for tables with rows (from `seed.sql`). Empty tables are reported as unverified, never as passing.
+
+## Credits
+
+Lintel's replay databases contain the `auth` and `storage` schemas produced by the migrations of [Supabase Auth](https://github.com/supabase/auth) v2.197.0 (MIT) and [Supabase Storage](https://github.com/supabase/storage) v1.77.0 (Apache-2.0), dumped by `scripts/gen-supabase-env.ts`. Static findings come from Supabase's linter, [splinter](https://github.com/supabase/splinter). The statement splitter is a port of the [Supabase CLI](https://github.com/supabase/cli)'s (MIT). License texts are in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+
 ## License
 
 MIT

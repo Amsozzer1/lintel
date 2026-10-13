@@ -92,8 +92,10 @@ export const ERROR_CATALOG = {
     exit: ExitCode.migration,
     summary: "A migration failed to apply.",
     fix: [
-      "The error names the migration and includes Postgres's message. Reproduce it with `supabase db reset`.",
+      "The error names the file, the statement and its line, and includes Postgres's own message (`details`, and `migration` in JSON and MCP output). Reproduce it with `supabase db reset`.",
+      "`relation … does not exist` (or a missing column, function or schema): the object was created outside your migrations, usually in the Supabase dashboard, so a database built only from migrations doesn't have it. Capture it with `supabase db pull`. Lintel exits 5 here on purpose: `supabase db reset` fails the same way.",
       "A migration that depends on data or extensions from outside the repo will fail on a fresh database. Put what it needs in an earlier migration or `seed.sql`.",
+      "Lintel applies migrations like `supabase db push`: only files named `<digits>_name.sql`, in name order, each in one transaction (`CREATE INDEX CONCURRENTLY` and similar statements run on their own).",
     ],
   },
   LINTEL_E_INTERNAL: {
@@ -106,12 +108,24 @@ export const ERROR_CATALOG = {
 } as const satisfies Record<string, ErrorSpec>;
 export type ErrorCode = keyof typeof ERROR_CATALOG;
 
+/** Where a migration (or the seed) failed, with the server's own error fields. */
+export interface MigrationFailure {
+  file: string;
+  /** 1-based number of the statement in the file. */
+  statement: number;
+  line: number;
+  column: number;
+  postgres: { code?: string; message: string; detail?: string; hint?: string; where?: string };
+}
+
 export interface LintelErrorInit {
   /** Most likely reason, in plain words. */
   cause?: string;
   /** The next command or action to try. */
   next?: string;
   details?: string;
+  /** Where a migration failed, with the server's error. */
+  migration?: MigrationFailure;
 }
 
 export class LintelError extends Error {
@@ -119,6 +133,7 @@ export class LintelError extends Error {
   readonly likelyCause: string | undefined;
   readonly next: string | undefined;
   readonly details: string | undefined;
+  readonly migration: MigrationFailure | undefined;
 
   constructor(code: ErrorCode, message: string, init: LintelErrorInit = {}) {
     super(message);
@@ -127,6 +142,7 @@ export class LintelError extends Error {
     this.likelyCause = init.cause;
     this.next = init.next;
     this.details = init.details;
+    this.migration = init.migration;
   }
 
   get exitCode(): ExitCode {
@@ -145,6 +161,8 @@ export class LintelError extends Error {
         [this.likelyCause, this.next && `try: ${this.next}`].filter(Boolean).join(" — ") ||
         undefined,
       docs_url: this.docsUrl,
+      details: this.details,
+      migration: this.migration,
     };
   }
 }
@@ -164,7 +182,7 @@ export function errorsMarkdown(): string {
     "",
     "<!-- Generated from src/core/errors.ts by `pnpm gen`. Do not edit by hand. -->",
     "",
-    "Every Lintel error has a stable code. The CLI prints it with a hint and exits with the code below; the MCP server returns it as `{ error: { code, message, hint, docs_url } }` in a tool result with `isError: true`.",
+    "Every Lintel error has a stable code. The CLI prints it with a hint and exits with the code below; the MCP server returns it as `{ error: { code, message, hint, docs_url, details, migration } }` in a tool result with `isError: true`. `details` is the underlying error text; `migration` (only for `LINTEL_E_MIGRATION`) gives the file, statement number, line, column and Postgres's error fields.",
     "",
     "| Code | Exit | Meaning |",
     "|---|---|---|",

@@ -46,17 +46,26 @@ src/cli   src/mcp   src/api     ← surfaces; core never imports them (enforced 
 
 It works in four steps:
 
-1. Read `supabase/migrations/*.sql` and `supabase/seed.sql` at the base ref and at the head (a ref or the working tree).
-2. Start **two fresh containers** from the digest-pinned `supabase/postgres` image. It is the same image `supabase start` uses, so roles, `auth` and the default grants match.
-3. Apply each side's full migration set, then the seed, **as `postgres`** (the role `supabase db push` uses). Objects created by any other role would miss Supabase's default grants, and exposure checks would silently pass.
+1. Read `supabase/seed.sql` and the migrations at the base ref and at the head (a ref or the working tree). Like Supabase, only files named `<digits>_name.sql` are migrations, applied in name order. Other `.sql` files are skipped and listed in the output.
+2. Start **two fresh containers** from the digest-pinned `supabase/postgres` image: the same Postgres, roles and default grants as `supabase start`. Then replace the image's `auth` and `storage` schemas with the ones a real project has (see below).
+3. Apply each side's migrations, then the seed, **as `postgres`** (the role `supabase db push` uses), **the way `supabase db push` applies them**:
+   - `RESET ALL` before each file;
+   - each file in one transaction;
+   - `CREATE/DROP INDEX CONCURRENTLY`, `REINDEX … CONCURRENTLY`, `VACUUM`, `ALTER SYSTEM` and `CLUSTER` on their own;
+   - the seed as one transaction.
+
+   Statements are split by a port of Supabase CLI's own splitter (`src/core/supabase/statements.ts`, tested against its test cases). Objects created by any other role than `postgres` would miss Supabase's default grants, and exposure checks would silently pass.
 4. Check both, then diff by fingerprint.
 
 Design decisions:
 
 - **Why two databases, not one replayed twice:** PRs edit old migrations and land out of timestamp order. Two full replays handle both.
 - **Readiness:** the image's init scripts restart the server. "Ready" means the `authenticated` role exists and the postmaster start time is stable.
+- **Hosted `auth` and `storage`:** the image's init scripts create these schemas as they were years ago. On a real project, Supabase Auth and Storage migrate them on startup, adding `auth.identities`, `storage.buckets.public` and dozens more objects that migrations use. `scripts/gen-supabase-env.ts` runs the pinned Auth and Storage images' own migrations against the pinned Postgres image and commits the dump (`src/core/supabase/environment.generated.ts`). Each replay container swaps it in. The same file gives engines without the image (the browser playground) the image's roles, schemas and grants.
+- **Failures:**
+  - A failed migration reports the file, statement, line and column, plus Postgres's error fields, in every output (`details` and `migration` in JSON and MCP).
+  - A missing table, column, function or schema is explained as what it almost always is: an object created in the dashboard, outside migrations. Lintel doesn't work around those. `supabase db reset` fails the same way.
 - **Why statistics-based lints are dropped in replay** (`unused_index`, `table_bloat`): on a fresh database they would fire on every new index.
-- **The `auth.jwt()` stub:** the image predates it, so Lintel creates it when missing.
 - **Cleanup:** containers are labelled `lintel.managed=1`, removed on exit and on Ctrl-C, and `lintel doctor --cleanup` removes leftovers.
 
 ## 5. Findings and diffs

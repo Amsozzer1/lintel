@@ -3,6 +3,7 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { join, posix } from "node:path";
 import { execa } from "execa";
 import { LintelError } from "../errors.ts";
+import { partitionMigrationFiles } from "../supabase/files.ts";
 
 export interface SqlFile {
   name: string;
@@ -13,6 +14,8 @@ export interface SupabaseFiles {
   /** Sorted by file name, which is how Supabase orders migrations. */
   migrations: SqlFile[];
   seed: string | undefined;
+  /** `.sql` files in the migrations folder that Supabase doesn't apply (not `<digits>_name.sql`). */
+  skipped: string[];
 }
 
 /**
@@ -60,35 +63,37 @@ export async function readAtRef(
     "--",
     `${dir}/`,
   ]);
-  const paths = listing
-    .split("\n")
-    .filter((p) => p.endsWith(".sql") && posix.dirname(p) === posix.normalize(dir))
-    .sort();
+  const { apply, skipped } = partitionMigrationFiles(
+    listing
+      .split("\n")
+      .filter((p) => posix.dirname(p) === posix.normalize(dir))
+      .map((p) => posix.basename(p)),
+  );
   const migrations = await Promise.all(
-    paths.map(async (p) => ({
-      name: posix.basename(p),
-      sql: await git(repoDir, ["show", `${commit.trim()}:${p}`]),
+    apply.map(async (name) => ({
+      name,
+      sql: await git(repoDir, ["show", `${commit.trim()}:${posix.join(dir, name)}`]),
     })),
   );
   const seed = await git(repoDir, [
     "show",
     `${commit.trim()}:${posix.join(supabaseDir, "seed.sql")}`,
   ]).catch(() => undefined);
-  return { migrations, seed };
+  return { migrations, seed, skipped };
 }
 
 export async function readWorktree(repoDir: string, supabaseDir: string): Promise<SupabaseFiles> {
   const dir = join(repoDir, supabaseDir, "migrations");
-  const names = (await readdir(dir).catch(() => [] as string[]))
-    .filter((n) => n.endsWith(".sql"))
-    .sort();
+  const { apply, skipped } = partitionMigrationFiles(
+    await readdir(dir).catch(() => [] as string[]),
+  );
   const migrations = await Promise.all(
-    names.map(async (name) => ({ name, sql: await readFile(join(dir, name), "utf8") })),
+    apply.map(async (name) => ({ name, sql: await readFile(join(dir, name), "utf8") })),
   );
   const seed = await readFile(join(repoDir, supabaseDir, "seed.sql"), "utf8").catch(
     () => undefined,
   );
-  return { migrations, seed };
+  return { migrations, seed, skipped };
 }
 
 export async function shortSha(repoDir: string, ref: string): Promise<string> {

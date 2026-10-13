@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { checkMigrations } from "../../core/ci.ts";
 import { ExitCode } from "../../core/errors.ts";
 import { atOrAbove } from "../../core/findings.ts";
+import { describeSkipped } from "../../core/supabase/files.ts";
 import { renderDiffHuman } from "../format/human.ts";
 import { decodeState, renderDiffMarkdown } from "../format/markdown.ts";
 import { err, out } from "../io.ts";
@@ -40,6 +41,9 @@ export async function run(opts: CiOptions): Promise<number> {
     ]);
   }
 
+  const skipped = describeSkipped(result.skipped, opts.supabaseDir ?? "supabase");
+  if (skipped && format !== "human") err(skipped);
+
   if (format === "json") out(JSON.stringify(result.diff, null, 2));
   else if (format === "markdown") {
     const previous = opts.previousComment
@@ -53,7 +57,8 @@ export async function run(opts: CiOptions): Promise<number> {
         previous,
       }),
     );
-  } else out(renderDiffHuman(result.diff));
+  } else
+    out(skipped ? `${skipped}\n\n${renderDiffHuman(result.diff)}` : renderDiffHuman(result.diff));
 
   return atOrAbove(result.diff.new, failOn).length ? ExitCode.findings : ExitCode.ok;
 }
