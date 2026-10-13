@@ -108,7 +108,7 @@ function contentSecurityPolicy(): Plugin {
     transformIndexHtml: (html) =>
       html.replace(
         "<head>",
-        `<head>\n    <meta http-equiv="Content-Security-Policy" content="${CSP}" />`,
+        `<head>\n    <meta http-equiv="Content-Security-Policy" content="${CSP}">`,
       ),
   };
 }
