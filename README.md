@@ -78,7 +78,7 @@ Design choices:
 | `lintel check`: one database, static findings via Supabase advisors | ✅ |
 | `lintel migrations check` / `lintel ci`: base vs head replay in throwaway databases, diff | ✅ |
 | `lintel diff`, output as human / JSON / PR markdown, exit codes, password redaction | ✅ |
-| GitHub Action with a fork-safe sticky comment ([see it on a demo PR](https://github.com/Amsozzer1/lintel/pull/1)) | ✅ |
+| GitHub Action with a fork-safe sticky comment (demo PRs: [a leak caught](https://github.com/Amsozzer1/lintel/pull/5), [the fix](https://github.com/Amsozzer1/lintel/pull/1)) | ✅ |
 | Probe P001: proves what the `anon` key can read (rolled back, read-only) | ✅ |
 | Probes P002 anon write, P003 cross-user read | ⏳ |
 | MCP server: `check_migrations`, `run_checks`, `diff_databases`, `list_checks`, `explain_check` | ✅ |
@@ -102,6 +102,7 @@ Design choices:
 - **Migrations only.** Lintel checks the database your migrations build, not your live project. Tables, policies or grants created in the Supabase dashboard (or by SQL run outside `supabase/migrations`) aren't in it. When a migration depends on one, the replay fails with exit 5 and names the missing object; `supabase db reset` would fail the same way. Capture dashboard changes with `supabase db pull`.
 - **Same rules as `supabase db push`.** Only files named `<digits>_name.sql` are applied (others are listed as skipped), each in one transaction, in name order.
 - **Extensions:** replays use Supabase's Postgres 17 image, so extensions it doesn't ship (e.g. `timescaledb`) fail to apply.
+- **`pgsodium` in old dumps:** schema dumps from projects that had `pgsodium` enabled contain `create extension if not exists "pgsodium" with schema "pgsodium"`. On a fresh database that fails, because `with schema` needs the schema to exist already. Drop the `with schema "pgsodium"` part: the extension always installs into `pgsodium`.
 - **Proof needs rows.** Probes prove a leak only for tables with rows (from `seed.sql`). Empty tables are reported as unverified, never as passing.
 
 ## Credits
