@@ -19,10 +19,14 @@
     "LICENSE"
   ],
   "engines": {
-    "node": ">=22"
+    "node": ">=22.12"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "tsup",
+    "prepack": "pnpm build",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
     "format": "biome check --write .",
