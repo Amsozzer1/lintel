@@ -14,27 +14,35 @@ Supabase already ships an excellent linter, [splinter](https://github.com/supaba
 2. **Proof.** Probes run real queries as `anon` (and soon as another signed-in user) and report what actually leaks, e.g. *"the public anon key can read 2 rows from `public.messages` because RLS is disabled."*
 3. **One contract, three surfaces:** a CLI, an MCP server for coding agents, and a REST API (in progress).
 
-## Try it (from source)
+## Try it
 
-You need Node 22 or later, Docker, and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started).
+You need Node 22.12 or later, Docker, and the [Supabase CLI](https://supabase.com/docs/guides/local-development/cli/getting-started). Nothing to clone or build:
+
+```sh
+cd ~/your-supabase-project
+npx @amsozzer/lintel migrations check   # your working tree vs main
+```
+
+The first run pulls the Supabase Postgres image (about 800 MB, one time). Run `npx @amsozzer/lintel setup` to do that ahead of time.
+
+```
+New
+  error public.messages P001 [proven]
+        Proved: the public anon key can read 2 rows from `public.messages` because RLS is disabled.
+  error public.messages policy_exists_rls_disabled
+        Table `public.messages` has RLS policies but RLS is not enabled on the table. …
+  error public.messages rls_disabled_in_public
+        Table `public.messages` is public, but RLS has not been enabled.
+
+3 new (3 error, 0 warn, 0 info) · 0 resolved · 1 unchanged
+```
+
+From source instead:
 
 ```sh
 git clone https://github.com/Amsozzer1/lintel && cd lintel
 pnpm install && pnpm build
-node dist/cli.js setup                      # one time: pulls the database image
-
-cd ~/your-supabase-project
-node ~/lintel/dist/cli.js migrations check  # your working tree vs main
-```
-
-```
-New
-  error public.messages rls_disabled_in_public
-        Table `public.messages` is public, but RLS has not been enabled.
-  error public.messages policy_exists_rls_disabled
-        Table `public.messages` has RLS policies but RLS is not enabled on the table. …
-
-2 new (2 error, 0 warn, 0 info) · 0 resolved · 0 unchanged
+cd ~/your-supabase-project && node ~/lintel/dist/cli.js migrations check
 ```
 
 ## Use it from a coding agent (MCP)
@@ -76,7 +84,7 @@ Design choices:
 | MCP server: `check_migrations`, `run_checks`, `diff_databases`, `list_checks`, `explain_check` | ✅ |
 | REST API (OpenAPI 3.1) | ⏳ |
 
-`lintel --help` starts in about 25 ms (measured on an M-series Mac with Node 24).
+`lintel --help` takes about 38 ms wall-clock, of which about 24 ms is Node's own startup (median of 40 runs, Apple M4, macOS 26.6, Node 24.21).
 
 ## Exit codes
 
