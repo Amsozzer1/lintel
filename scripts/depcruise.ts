@@ -1,7 +1,7 @@
 /** Run dependency-cruiser and fail if it analyzed nothing: a layering gate that checks zero files must not pass. */
 import { execFileSync } from "node:child_process";
 
-const raw = execFileSync("npx", ["depcruise", "src", "--output-type", "json"], {
+const raw = execFileSync("npx", ["depcruise", "src", "playground/src", "--output-type", "json"], {
   encoding: "utf8",
 });
 const result = JSON.parse(raw.slice(raw.indexOf("{"))) as {

@@ -1,0 +1,2 @@
+create function graphql.resolve(query text, variables jsonb default '{}', "operationName" text default null, extensions jsonb default null) returns jsonb language sql as $$ select '{}'::jsonb $$;
+create function graphql_public.graphql("operationName" text default null, query text default null, variables jsonb default null, extensions jsonb default null) returns jsonb language sql as $$ select '{}'::jsonb $$;

@@ -1,0 +1,497 @@
+/* Charter (Bitstream, 1987; permissive license) and Commit Mono (SIL OFL 1.1). See /licenses. */
+@font-face {
+  font-family: "Charter";
+  src: url("./fonts/charter-regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Charter";
+  src: url("./fonts/charter-italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Charter";
+  src: url("./fonts/charter-bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Commit Mono";
+  src: url("./fonts/commit-mono-400.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Commit Mono";
+  src: url("./fonts/commit-mono-700.woff2") format("woff2");
+  font-weight: 700;
+  font-display: swap;
+}
+
+/*
+ * Four values carry the page: paper, hairline, graphite, ink. Rust marks errors and nothing else.
+ * The one motif is the beam: a heavy rule over each opening, the way a lintel spans a doorway.
+ */
+:root {
+  --paper: #f4f2ec;
+  --field: #faf9f5;
+  --hairline: #d6d1c4;
+  --pencil: #8a8478;
+  --graphite: #57534a;
+  --ink: #1c1b17;
+  --rust: #a2381d;
+
+  --text: "Charter", "Bitstream Charter", "Sitka Text", Cambria, Georgia, serif;
+  --mono: "Commit Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --beam: 6px;
+  --gutter: 16px;
+  --measure: 1180px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  font-family: var(--text);
+  font-size: 16.5px;
+  line-height: 1.55;
+  letter-spacing: 0;
+  font-kerning: normal;
+  text-rendering: optimizeLegibility;
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.18em;
+  text-decoration-color: var(--hairline);
+}
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ---- Masthead: no beam of its own; it's the wall the doorway sits in. ---- */
+
+.masthead,
+.doorway,
+.colophon {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.masthead {
+  padding-top: 30px;
+  padding-bottom: 28px;
+}
+
+.masthead-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 24px;
+  margin-bottom: 10px;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+.wordmark-sub {
+  font-weight: 400;
+  color: var(--graphite);
+}
+
+.repo {
+  font-size: 14px;
+  letter-spacing: 0.008em;
+  color: var(--pencil);
+}
+.repo:hover {
+  color: var(--ink);
+}
+
+.lede {
+  max-width: 48em;
+  margin: 0 0 4px;
+  color: var(--graphite);
+}
+
+.privacy {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.008em;
+  color: var(--pencil);
+}
+
+/* ---- The doorway: input on the left, what comes through on the right. ---- */
+
+.doorway {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 56px;
+  padding-bottom: 64px;
+}
+
+@media (min-width: 1180px) {
+  .doorway {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    gap: 72px;
+  }
+}
+
+/* In one column, what comes through goes first: the first screen shows the finding. */
+@media (max-width: 1179px) {
+  .side-output {
+    order: -1;
+  }
+}
+
+.beam {
+  height: var(--beam);
+  background: var(--ink);
+  margin-bottom: 18px;
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 20px;
+  margin-bottom: 10px;
+}
+.head-seed {
+  margin-top: 22px;
+}
+
+.label {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: -0.004em;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13.5px;
+  letter-spacing: 0.012em;
+  color: var(--pencil);
+  font-variant-numeric: tabular-nums;
+}
+
+.examples {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.008em;
+  color: var(--pencil);
+}
+.examples-lead {
+  margin-right: 10px;
+}
+.example {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  color: var(--graphite);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+  text-decoration-color: var(--hairline);
+}
+.example:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
+}
+.example[aria-pressed="true"] {
+  color: var(--ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+.examples-sep {
+  margin: 0 7px;
+  color: var(--hairline);
+}
+
+/* Editors read as editable through value alone: a lighter field, no border. */
+.editor {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 14px 16px;
+  border: 0;
+  border-radius: 0;
+  background: var(--field);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+  letter-spacing: 0;
+  tab-size: 2;
+  resize: vertical;
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
+}
+.editor::placeholder {
+  color: var(--pencil);
+  opacity: 1;
+}
+.editor:focus-visible {
+  outline-offset: 0;
+}
+/*
+ * Heights follow the window so Check stays on screen at 1280×720: 8 to 18 lines for the
+ * migration (one line is 13.5px × 1.6), 5 for the seed. Both still resize.
+ */
+.editor-migration {
+  height: clamp(200px, calc(100svh - 500px), 417px);
+}
+.editor-seed {
+  height: 136px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 18px;
+  margin-top: 18px;
+}
+
+.run {
+  appearance: none;
+  border: 0;
+  border-radius: 0;
+  padding: 9px 22px 10px;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.004em;
+  cursor: pointer;
+}
+.run:disabled {
+  background: var(--hairline);
+  color: var(--graphite);
+  cursor: default;
+}
+
+.status {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.008em;
+  color: var(--graphite);
+  font-variant-numeric: tabular-nums;
+}
+.status-key {
+  color: var(--pencil);
+}
+.stop {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin-left: 4px;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+/* Loading: the beam over the findings is set in place as Postgres arrives, filling with ink. */
+.beam.loading {
+  background: var(--hairline);
+}
+.beam-fill {
+  display: none;
+  height: 100%;
+  width: 0;
+  background: var(--ink);
+  transition: width 120ms linear;
+}
+.beam.loading .beam-fill {
+  display: block;
+}
+
+/* ---- Findings: the CLI's lines, set in mono, with value doing the work color would. ---- */
+
+.results {
+  font-family: var(--mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+  letter-spacing: 0;
+  color: var(--ink);
+  overflow-x: auto;
+}
+.results.stale {
+  color: var(--pencil);
+}
+.results.stale .t-error,
+.results.stale .t-object,
+.results.stale .t-proven {
+  color: var(--pencil);
+}
+
+.empty {
+  margin: 0;
+  font-family: var(--text);
+  font-size: 16.5px;
+  color: var(--graphite);
+}
+.empty-more {
+  max-width: 30em;
+  margin-top: 6px;
+  font-size: 14px;
+  letter-spacing: 0.008em;
+  color: var(--pencil);
+}
+
+.line {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+/* Lines wrap under the object and message, not back under the level. */
+.line-message,
+.line-head {
+  padding-left: 8ch;
+  text-indent: -8ch;
+}
+.gap {
+  height: 1.1em;
+}
+/* The CLI's lines, but with air between findings: the page has room a terminal doesn't. */
+.line-message + .line-head {
+  margin-top: 12px;
+}
+
+.t-meta,
+.t-rule {
+  color: var(--pencil);
+}
+.t-error {
+  color: var(--rust);
+  font-weight: 700;
+}
+.t-warn {
+  color: var(--ink);
+  font-weight: 700;
+}
+.t-info {
+  color: var(--graphite);
+}
+.t-object {
+  font-weight: 700;
+}
+.t-proven {
+  color: var(--ink);
+  font-weight: 700;
+}
+.t-text {
+  color: var(--graphite);
+}
+.t-clean {
+  color: var(--ink);
+}
+.t-code {
+  color: var(--rust);
+  font-weight: 700;
+}
+.t-dim {
+  color: var(--pencil);
+}
+
+/* ---- Colophon ---- */
+
+.colophon {
+  padding-bottom: 56px;
+}
+.limits {
+  max-width: 40em;
+  margin: 0 0 18px;
+  padding-top: 22px;
+  border-top: 1px solid var(--hairline);
+  font-size: 14.5px;
+  letter-spacing: 0.006em;
+  color: var(--graphite);
+}
+.credits {
+  margin: 0;
+  font-size: 13px;
+  letter-spacing: 0.016em;
+  color: var(--pencil);
+}
+.inline-code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+  letter-spacing: 0;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  body {
+    font-size: 16px;
+  }
+  .masthead {
+    padding-top: 28px;
+    padding-bottom: 30px;
+  }
+  .wordmark {
+    font-size: 21px;
+  }
+  .doorway {
+    gap: 44px;
+  }
+  .editor-migration {
+    height: 300px;
+  }
+  .results,
+  .editor {
+    font-size: 13px;
+  }
+  /* On a phone, pasted SQL wraps rather than scrolling sideways inside the box. */
+  .editor {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    overflow-x: hidden;
+  }
+  .inline-code {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

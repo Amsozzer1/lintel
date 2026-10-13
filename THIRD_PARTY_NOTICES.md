@@ -30,6 +30,17 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
+The browser playground (`playground/`) also ships the Supabase linter (splinter) SQL that Supabase CLI v2.118.0 runs for `supabase db advisors`:
+
+- **File:** `apps/cli/src/commands/db/advisors/advisors.lints-sql.ts`.
+- **Commit:** supabase/cli 70b42b8bf64b8cf1fd14c02c013d99dd655626e2, which is tag v2.118.0.
+- **License:** MIT. `apps/cli/package.json` declares `"license": "MIT"`, the published `supabase` npm package is MIT, and the text is the MIT license above.
+- **In the bundle:** `playground/src/lints.generated.ts`.
+
+## Supabase Postgres image extensions
+
+`src/core/supabase/extensions.generated.ts` lists the extensions in `supabase/postgres:17.6.1.013` and, for the ones the playground stubs, their object names and function signatures, read from the image's catalog. The stubs contain no code from those extensions: every body is empty.
+
 ## Supabase Auth
 
 `src/core/supabase/environment.generated.ts` contains a schema dump of the `auth` schema produced by the migrations of Supabase Auth v2.197.0, https://github.com/supabase/auth.

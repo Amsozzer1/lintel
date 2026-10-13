@@ -1,3 +1,5 @@
+packages:
+  - playground
 allowBuilds:
   '@swc/core': false
   esbuild: true

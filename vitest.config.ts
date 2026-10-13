@@ -7,6 +7,14 @@ export default defineConfig({
       { test: { name: "e2e", include: ["test/e2e/**/*.test.ts"], testTimeout: 30_000 } },
       {
         test: {
+          name: "playground",
+          include: ["playground/test/**/*.test.ts"],
+          testTimeout: 60_000,
+          fileParallelism: false,
+        },
+      },
+      {
+        test: {
           name: "integration",
           include: ["test/integration/**/*.test.ts"],
           testTimeout: 240_000,
