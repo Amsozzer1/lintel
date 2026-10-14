@@ -1,6 +1,8 @@
 {
   "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
-  "files": { "includes": ["**", "!dist", "!**/dist", "!coverage", "!**/*.snap", "!schemas"] },
+  "files": {
+    "includes": ["**", "!dist", "!**/dist", "!study/private", "!coverage", "!**/*.snap", "!schemas"]
+  },
   "formatter": { "indentStyle": "space", "lineWidth": 100 },
   "linter": { "rules": { "preset": "recommended" } },
   "assist": { "actions": { "source": { "organizeImports": "on" } } }
