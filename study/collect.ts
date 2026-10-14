@@ -61,7 +61,8 @@ for (const slice of slices) {
         slice,
       };
       appendFileSync(RAW, `${JSON.stringify(hit)}\n`);
-      const r = (repos[hit.repo] ??= { fork: hit.fork, slices: [], paths: 0 });
+      repos[hit.repo] ??= { fork: hit.fork, slices: [], paths: 0 };
+      const r = repos[hit.repo] as { fork: boolean; slices: string[]; paths: number };
       r.paths++;
       if (!r.slices.includes(slice)) r.slices.push(slice);
       hits++;
