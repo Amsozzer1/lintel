@@ -89,4 +89,14 @@ Every number comes from an actual run. What can't be measured is reported as suc
 
 ## Changes
 
-None yet.
+Made during the pilot (10 repositories, 2026-10-13). None of them changes which repositories are eligible.
+
+1. **Candidate frame.** It is the union of eight code-search size slices (bytes):
+   - 200..260, 500..560, 900..980, 1500..1600;
+   - 2500..2650, 4000..4300, 7000..7600, 12000..14000.
+
+   That is 8,000 search hits and 5,865 repositories. The full run adds slices; the same seed fixes the order.
+2. **Fixed or removed.** Each commit also records every table and view in `public`. That is how an exposure that ends is classed as *fixed* (the relation is still there) or *removed* (it was dropped).
+3. **Unit of the duration headline.** It is the repository: from the first commit where any table is exposed to the first later commit where none is. Per-table intervals are still published. Per table, a repository with 14 exposed tables would count 14 times.
+4. **Failure class.** Exceptions raised by a migration itself (`P0001`, e.g. "table X must exist before this migration") get their own failure class instead of "other".
+5. **Reading files.** The replay fetches each commit's migration files in one batched read before reading them. Hundreds of parallel lazy fetches from a blob-less clone failed now and then. Three pilot commits failed that way, and those two repositories were replayed again.

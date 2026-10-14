@@ -1,0 +1,132 @@
+{
+  "repositories": 10,
+  "repositoriesEverExposingATable": 2,
+  "repositoriesExposingATableAtHead": 1,
+  "repositoriesWhoseHeadDidNotReplay": 5,
+  "commitsTouchingMigrations": [21, 4, 43, 15, 10, 12, 32, 3, 47, 4],
+  "commitsSampled": 159,
+  "commitsApplied": 99,
+  "replayFailures": {
+    "other SQL error": 16,
+    "other": 1,
+    "object created outside migrations": 23,
+    "raised by the migration itself": 20
+  },
+  "repositoriesWithAnAppliedCommit": 7,
+  "repositoryExposures": {
+    "note": "per repository: first commit with any anon-readable table without RLS, to the first later commit with none",
+    "total": 2,
+    "closed": 0,
+    "openAtLastReplay": 2,
+    "kaplanMeierMedianDays": null,
+    "kaplanMeierMedianCommits": null
+  },
+  "tableExposures": {
+    "total": 17,
+    "fixed": 1,
+    "removed": 0,
+    "openAtLastReplay": 16,
+    "kaplanMeierMedianDays": 61,
+    "kaplanMeierMedianCommits": 11
+  },
+  "otherExposures": {
+    "views": 3,
+    "materializedViews": 0
+  },
+  "secondsPerCommit": {
+    "median": 4.932,
+    "max": 9.264
+  },
+  "perRepository": [
+    {
+      "id": "repo-001",
+      "touching": 21,
+      "sampled": 21,
+      "applied": 15,
+      "everExposed": true,
+      "exposedAtHead": null,
+      "headApplied": false
+    },
+    {
+      "id": "repo-002",
+      "touching": 4,
+      "sampled": 4,
+      "applied": 4,
+      "everExposed": true,
+      "exposedAtHead": true,
+      "headApplied": true
+    },
+    {
+      "id": "repo-003",
+      "touching": 43,
+      "sampled": 30,
+      "applied": 29,
+      "everExposed": false,
+      "exposedAtHead": false,
+      "headApplied": true
+    },
+    {
+      "id": "repo-004",
+      "touching": 15,
+      "sampled": 15,
+      "applied": 15,
+      "everExposed": false,
+      "exposedAtHead": false,
+      "headApplied": true
+    },
+    {
+      "id": "repo-005",
+      "touching": 10,
+      "sampled": 10,
+      "applied": 0,
+      "everExposed": false,
+      "exposedAtHead": null,
+      "headApplied": false
+    },
+    {
+      "id": "repo-006",
+      "touching": 12,
+      "sampled": 12,
+      "applied": 0,
+      "everExposed": false,
+      "exposedAtHead": null,
+      "headApplied": false
+    },
+    {
+      "id": "repo-007",
+      "touching": 32,
+      "sampled": 30,
+      "applied": 3,
+      "everExposed": false,
+      "exposedAtHead": null,
+      "headApplied": false
+    },
+    {
+      "id": "repo-008",
+      "touching": 3,
+      "sampled": 3,
+      "applied": 3,
+      "everExposed": false,
+      "exposedAtHead": false,
+      "headApplied": true
+    },
+    {
+      "id": "repo-009",
+      "touching": 47,
+      "sampled": 30,
+      "applied": 30,
+      "everExposed": false,
+      "exposedAtHead": false,
+      "headApplied": true
+    },
+    {
+      "id": "repo-010",
+      "touching": 4,
+      "sampled": 4,
+      "applied": 0,
+      "everExposed": false,
+      "exposedAtHead": null,
+      "headApplied": false
+    }
+  ]
+}
