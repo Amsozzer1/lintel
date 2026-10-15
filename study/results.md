@@ -2,8 +2,6 @@
 
 Method, criteria and every change after collection: [README.md](README.md). Data: [`data/`](data/). Collected 2026-10-13 to 2026-10-14.
 
-> **Status: provisional.** 13 sampled commits of one repository (`repo-286`) are still being replayed after an infrastructure fix (README, change 6). Its migrations take 30 to 60 minutes per commit. Until it finishes, those commits count as replay failures. That one repository can't move a headline number by more than 0.3 points.
-
 ## In one paragraph
 
 Of the 777 repositories with at least one migration commit that replays, **146 (18.8%) had a table the public `anon` key could read in full at some point**: RLS was off, and `anon` could select. Of the 393 whose latest commit replays, **43 (10.9%) still do**. When an exposure ended, it had usually lasted more than a day: 67% of them did, and 37% lasted more than a week. Counting the exposures that are still open, the median exposure lasted 47 days (Kaplan–Meier).
@@ -46,23 +44,60 @@ The sample is young and small:
 
 **Not counted either way:** 43 more repositories were still exposing a table at their last commit that replays, but their HEAD doesn't replay. Their state at HEAD is unknown, so they aren't in the at-HEAD figure in either direction.
 
-## Secondary measures
+### By stratum
 
-Each one is reported on its own; none is folded into the primary measure. Same denominators.
+The same measure and the same denominators, split three ways. Intervals are 95% Wilson intervals.
+
+A cell marked *too small* has a denominator under 30, or fewer than 5 repositories on one side of the measure. Read those cells as "not measured", not as a rate.
+
+**By stars**
+
+| Stars | Repositories | Ever | At HEAD |
+|---|---|---|---|
+| 0 | 794 | 101 of 620, 16.3% [13.6, 19.4] | 26 of 312, 8.3% [5.8, 11.9] |
+| 1 to 9 | 188 | 38 of 142, 26.8% [20.2, 34.6] | 14 of 69, 20.3% [12.5, 31.2] |
+| 10 or more | 18 | 7 of 15: *too small* | 3 of 12: *too small* |
+
+**By creation year**
+
+| Created | Repositories | Ever | At HEAD |
+|---|---|---|---|
+| Before 2026 | 281 | 46 of 211, 21.8% [16.8, 27.8] | 13 of 78, 16.7% [10.0, 26.5] |
+| 2026 | 719 | 100 of 566, 17.7% [14.7, 21.0] | 30 of 315, 9.5% [6.8, 13.3] |
+
+**By whether the project looks deployed**
+
+| Looks deployed | Repositories | Ever | At HEAD |
+|---|---|---|---|
+| Yes | 603 | 97 of 464, 20.9% [17.5, 24.8] | 31 of 254, 12.2% [8.7, 16.8] |
+| No or unclear | 397 | 49 of 313, 15.7% [12.0, 20.1] | 12 of 139, 8.6% [5.0, 14.5] |
+
+**What counts as "looks deployed":**
+
+- One rule for every repository: the repository's homepage field is a site that isn't a generic tool, platform or docs site, or the README links an app on an app-hosting domain such as `*.vercel.app` or `*.netlify.app`.
+- Nothing was visited; only the homepage field and the README were read.
+- 12 of the 43 repositories exposed at HEAD were also checked by hand, from their README and repository text: the 7 whose only link was a generic one, and the 6 with no private contact channel (one was in both).
+  - The hand check found 6 deployed, 3 not deployed and 3 unclear. The unclear ones are counted as "no or unclear".
+  - It disagreed with the rule twice. Both times the rule said "no" and the repository's own text said the project was deployed, so the rule probably undercounts deployed projects a little.
+- The rule alone classes the other 988 repositories.
+
+**How to read the strata:**
+
+- **Stars:** repositories with 1 to 9 stars were more likely to be exposed than those with none, ever and at HEAD, and the intervals don't overlap.
+- **Year and deployment:** the differences are within the intervals.
+- **Mixed effects:** these splits aren't independent. Older and starred repositories tend to have longer histories, and "ever" rises with the number of commits replayed, because every commit is another chance. None of these splits isolates a cause.
+
+## Other routes to the same data
+
+These are reported on their own, not folded into the headline. Same denominators.
 
 | Measure | Ever | At HEAD |
 |---|---|---|
-| Always-true policy lint that applies to `anon` (Splinter's `rls_policy_always_true`) | 72 of 777, 9.3% [7.4, 11.5] | 28 of 393, 7.1% [5.0, 10.1] |
-| `SELECT` (or `ALL`) policy for `anon` whose `USING` is literally `true`, on a table with RLS on | 378 of 777, 48.6% [45.1, 52.2] | 175 of 393, 44.5% [39.7, 49.5] |
-| Lintel P001: `anon` read rows in the replayed database | 288 of 777, 37.1% [33.7, 40.5] | 148 of 393, 37.7% [33.0, 42.5] |
 | View or materialized view `anon` can select that bypasses RLS (not `security_invoker`) | 122 of 777, 15.7% [13.3, 18.4] | 42 of 393, 10.7% [8.0, 14.1] |
+| Always-true write policy for `anon` (Splinter's `rls_policy_always_true`) | 72 of 777, 9.3% [7.4, 11.5] | 28 of 393, 7.1% [5.0, 10.1] |
 
-How to read them:
-
-- **Splinter's lint** skips `SELECT` policies on purpose. What it catches here is mostly `anon` being allowed to write: insert, update or delete.
-- **A `true` SELECT policy** is often deliberate, for public profiles, posts or listings. It's a measure of how often everything is opened up for reading, not a count of mistakes.
-- **P001** depends on the seed data: it can only prove a read when the repository's `seed.sql` puts rows in the table. It includes deliberate public reads.
-- **Views:** a view that isn't `security_invoker` runs with its owner's rights, so it can expose rows that the table's RLS would hide.
+- **Views:** a view that isn't `security_invoker` runs with its owner's rights, so it can show rows that the table's RLS would hide.
+- **Writes:** Splinter's lint flags a policy for `anon` (or for every role) that lets any row be inserted, updated or deleted: `USING (true)` or `WITH CHECK (true)` on `INSERT`, `UPDATE`, `DELETE` or `ALL`.
 
 ## How long exposures lasted
 
@@ -135,9 +170,30 @@ The cap can shorten a duration by up to about a day, by catching the start late.
 | Raised by the migration itself (`RAISE EXCEPTION`, e.g. "run this after X") | 464 |
 | Permission denied | 425 |
 | Extension that isn't in the Supabase image | 60 |
-| Infrastructure (git or Docker) after one retry; 13 of these are `repo-286`'s commits still being replayed | 22 |
+| Infrastructure (git or Docker): 9 that failed again on the retry, and 13 from one repository that weren't retried (see [Limitations](#limitations)) | 22 |
 
 At HEAD, 415 of the 602 repositories whose latest commit doesn't replay fail because of an object created outside the migrations (69%). Their migration files on their own don't rebuild their database. That is the main reason only 39% of HEADs replay.
+
+## Public reads allowed by policy (often intentional, e.g. public profiles or posts)
+
+These are **not exposures** and aren't part of any number above. A table here has RLS on, and a policy chose to let `anon` read it. That is how a public profile page or a blog works. They're reported because the size of the gap between the two policy measures needs an explanation.
+
+| Public read allowed by policy | Ever | At HEAD |
+|---|---|---|
+| A `SELECT` (or `ALL`) policy for `anon` whose `USING` is literally `true`, on a table with RLS on | 378 of 777, 48.6% [45.1, 52.2] | 175 of 393, 44.5% [39.7, 49.5] |
+| Lintel's P001 read rows as `anon` from a table with RLS on, using the repository's own seed data | 254 of 777, 32.7% [29.5, 36.1] | 137 of 393, 34.9% [30.3, 39.7] |
+
+**Why 48.6% here but 9.3% for Splinter's always-true lint:** the two count different things.
+
+- **Splinter's lint excludes reads.** It skips `SELECT` policies with `USING (true)` on purpose: its own description says the pattern "is often used deliberately for public read access". It only flags always-true writes.
+- **The `true` SELECT row counts exactly the policies Splinter skips.** Open reads are common and open writes are rarer.
+- **The overlap:** 60 of the 72 repositories with an always-true write policy also have an always-true read policy.
+
+**About the P001 row:**
+
+- It depends on the seed data: P001 can only prove a read when `seed.sql` puts rows in the table.
+- Proven reads on tables with RLS off are left out of this row. Those are the headline exposure.
+- Counting both kinds, P001 proved an `anon` read in 288 of 777 repositories (37.1%) ever and in 148 of 393 (37.7%) at HEAD.
 
 ## Limitations
 
@@ -158,6 +214,7 @@ At HEAD, 415 of the 602 repositories whose latest commit doesn't replay fail bec
 - **P001 depends on seed data.** It can only prove a read where `seed.sql` puts rows in the table.
 - **Sampling between commits:** above 30 commits per repository, an exposure can start between sampled commits. The [cap recheck](#did-the-30-commit-cap-miss-anything) puts that at about a day at most, with no change to which repositories are counted.
 - **One infrastructure fix after collection.** 1,538 commits first failed in git, inside the replay, and were replayed again. The fix and its effect are in README change 6.
+- **One repository not fully retried.** One repository has a very long migration history, and replaying it takes 30 to 75 minutes per commit, so 13 of its sampled commits weren't replayed again and still count as infrastructure failures. One repository can move "ever" by at most 0.13 points and "at HEAD" by at most 0.3 points.
 
 ## Data
 
@@ -169,3 +226,4 @@ All repository names are replaced by `repo-NNN`, table names by salted hashes, a
 | `data/n1000-commits.csv` | Sampled commit: replayed or not, failure class, exposure counts, seconds |
 | `data/n1000-exposures.csv` | Table or view exposure: start, end, outcome, length in commits and days |
 | `data/n1000-repo-exposures.csv` | Repository-level exposure |
+| `data/n1000-strata.json` | The primary measure by stars, creation year and "looks deployed" (counts only) |

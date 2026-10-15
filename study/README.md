@@ -110,4 +110,14 @@ Made after the full run's replay (2026-10-14). It changes no criterion and no me
    - **Cause:** every lazy blob fetch adds a pack to the clone. Past git's pack limit, automatic maintenance repacked the clone while the replay was still reading it. The read then failed with "in the commit graph file but not in the object database". The replay classed those commits as unreplayable. They were 12% of all failed commits (1,538 of 12,699), and 50 were a repository's HEAD.
    - **Fix:** automatic maintenance is off in the clones (`gc.auto=0`, `maintenance.auto=false`, `fetch.writeCommitGraph=false`). `study/repair.ts` replays those commits again in place. A commit that fails the same way twice keeps its failure.
    - **Kept:** the results before the repair stay in `study/private/`.
+   - **Not retried:** 13 commits of one repository with a very long migration history, which takes 30 to 75 minutes per commit to replay. The repair was stopped, and they still count as infrastructure failures.
    - **Cap recheck:** it was stopped after its first repository and finished with the fix in place.
+
+Added after the results were first read (2026-10-14). Neither changes the primary measure.
+
+7. **P001 split by RLS.** A P001 proven read on a table with RLS off is already the primary measure. A new measure, `provenReadByPolicy`, counts proven reads on tables with RLS on, where a policy allowed the read. The original all-tables P001 measure is still in the summary.
+8. **Strata.**
+   - `study/strata.ts` splits the primary measure by stars (0, 1 to 9, 10 or more), by creation year (before 2026, or 2026) and by whether the project looks deployed.
+   - "Looks deployed" is one rule for every repository: a homepage field on a site that isn't a generic tool or docs site, or a README link to an app on an app-hosting domain.
+   - Twelve of the repositories exposed at HEAD were checked by hand from their README and repository text: the seven whose only link was generic and the six with no private contact channel. The hand check overrides the rule for them.
+   - Only the homepage field and the README were read. No URL was visited.

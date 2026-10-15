@@ -78,6 +78,11 @@ const alwaysTrueSelectForAnon = (r: CommitResult) => {
 };
 const provenReads = (r: CommitResult) =>
   (r.findings ?? []).filter((f) => f.rule === "P001" && f.proven);
+/** P001 proven reads on tables with RLS on: a policy allowed them (the rest are RLS-off tables). */
+const provenReadsByPolicy = (r: CommitResult) => {
+  const rlsOn = new Set((r.relations ?? []).filter((x) => x.rls).map((x) => x.name));
+  return provenReads(r).filter((f) => rlsOn.has(f.name ?? ""));
+};
 
 const failureClass = (r: CommitResult) => {
   const sqlstate = r.failure?.sqlstate;
@@ -122,13 +127,21 @@ interface RepoRow {
   head: Record<string, boolean | null>;
 }
 const perRepo: RepoRow[] = [];
-const MEASURES = ["table", "alwaysTrueLint", "alwaysTrueSelect", "provenRead", "view"] as const;
+const MEASURES = [
+  "table",
+  "alwaysTrueLint",
+  "alwaysTrueSelect",
+  "provenRead",
+  "provenReadByPolicy",
+  "view",
+] as const;
 type Measure = (typeof MEASURES)[number];
 const measure: Record<Measure, (r: CommitResult) => boolean> = {
   table: (r) => tablesExposed(r).length > 0,
   alwaysTrueLint: (r) => alwaysTrueLintForAnon(r).length > 0,
   alwaysTrueSelect: (r) => alwaysTrueSelectForAnon(r).length > 0,
   provenRead: (r) => provenReads(r).length > 0,
+  provenReadByPolicy: (r) => provenReadsByPolicy(r).length > 0,
   view: (r) => viewsExposed(r).length > 0,
 };
 const headExposed: { raw: Raw; head: CommitResult }[] = [];
