@@ -74,4 +74,8 @@ for (const slice of slices) {
   console.log(
     `size:${slice}  ${total} files match, ${hits} fetched, ${Object.keys(repos).length} repositories so far`,
   );
+  // Code search returns at most 1,000 results per query. A saturated slice is a partial frame:
+  // narrow it, or describe the frame as "the first 1,000 hits" (as the N=1000 run does).
+  if (hits < total)
+    console.log(`  saturated: ${total - hits} matching files weren't returned for size:${slice}`);
 }

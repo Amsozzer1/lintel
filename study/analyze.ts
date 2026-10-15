@@ -50,14 +50,24 @@ const raws = readRaw(rawDir);
 
 const DAY = 86_400_000;
 type Kind = "table" | "view" | "materialized view";
-const exposure = (e: { kind: string; rls: boolean; securityInvoker: boolean }): Kind | undefined =>
-  (e.kind === "r" || e.kind === "p") && !e.rls
-    ? "table"
-    : e.kind === "v" && !e.securityInvoker
-      ? "view"
-      : e.kind === "m"
-        ? "materialized view"
-        : undefined;
+// Exposed means anon has table-level SELECT. Column grants alone don't count (change 9); replays
+// made before change 9 don't record it and are taken as table-level, which a search of their
+// migrations for column grants supports.
+const exposure = (e: {
+  kind: string;
+  rls: boolean;
+  securityInvoker: boolean;
+  tableSelect?: boolean;
+}): Kind | undefined =>
+  e.tableSelect === false
+    ? undefined
+    : (e.kind === "r" || e.kind === "p") && !e.rls
+      ? "table"
+      : e.kind === "v" && !e.securityInvoker
+        ? "view"
+        : e.kind === "m"
+          ? "materialized view"
+          : undefined;
 const tablesExposed = (r: CommitResult) =>
   (r.exposed ?? []).filter((e) => exposure(e) === "table").map((e) => e.name);
 const viewsExposed = (r: CommitResult) =>
@@ -69,13 +79,26 @@ const alwaysTrueLintForAnon = (r: CommitResult) =>
     const roles = /security for (.+?)\.?$/.exec(f.message ?? "")?.[1]?.split(/,\s*/) ?? [];
     return roles.includes("anon") || roles.includes("public");
   });
-/** Study query: an always-true SELECT (or ALL) policy for anon on a table that has RLS on. */
+/**
+ * Study query: an always-true SELECT policy, or an ALL policy whose USING is true, for anon on a
+ * table that has RLS on. An ALL policy that is true only in WITH CHECK allows writes, not reads.
+ */
 const alwaysTrueSelectForAnon = (r: CommitResult) => {
   const rlsOn = new Set((r.relations ?? []).filter((x) => x.rls).map((x) => x.name));
   return (r.alwaysTrue ?? []).filter(
-    (p) => (p.cmd === "SELECT" || p.cmd === "ALL") && rlsOn.has(p.table),
+    (p) => (p.cmd === "SELECT" || (p.cmd === "ALL" && p.qualTrue !== false)) && rlsOn.has(p.table),
   );
 };
+const kindOf = (k: string): Kind | undefined =>
+  k === "r" || k === "p"
+    ? "table"
+    : k === "v"
+      ? "view"
+      : k === "m"
+        ? "materialized view"
+        : undefined;
+/** Intervals are per relation name and kind: a table replaced by a view of the same name is two. */
+const key = (kind: Kind, name: string) => `${kind}\u0000${name}`;
 const provenReads = (r: CommitResult) =>
   (r.findings ?? []).filter((f) => f.rule === "P001" && f.proven);
 /** P001 proven reads on tables with RLS on: a policy allowed them (the rest are RLS-off tables). */
@@ -159,15 +182,15 @@ for (const raw of raws) {
       (r.authorDate !== undefined && Date.parse(r.date) - Date.parse(r.authorDate) > DAY),
   );
   const applied = results.filter((r) => r.applied);
-  const open = new Map<string, { kind: Kind; start: CommitResult }>();
+  const open = new Map<string, { kind: Kind; relation: string; start: CommitResult }>();
   let repoOpen: CommitResult | undefined;
 
   for (const r of results) {
     if (r.ms) seconds.push(r.ms / 1000);
-    const exposed = new Map<string, Kind>();
+    const exposed = new Map<string, { kind: Kind; relation: string }>();
     for (const e of r.exposed ?? []) {
       const kind = exposure(e);
-      if (kind) exposed.set(e.name, kind);
+      if (kind) exposed.set(key(kind, e.name), { kind, relation: e.name });
     }
     commitRows.push(
       [
@@ -191,24 +214,28 @@ for (const raw of raws) {
       failures[c] = (failures[c] ?? 0) + 1;
       continue;
     }
-    const present = new Set((r.relations ?? []).map((x) => x.name));
-    for (const [relation, kind] of exposed)
-      if (!open.has(relation)) open.set(relation, { kind, start: r });
-    for (const [relation, o] of open) {
-      if (exposed.has(relation)) continue;
+    const present = new Set(
+      (r.relations ?? []).flatMap((x) => {
+        const kind = kindOf(x.kind);
+        return kind ? [key(kind, x.name)] : [];
+      }),
+    );
+    for (const [k, e] of exposed) if (!open.has(k)) open.set(k, { ...e, start: r });
+    for (const [k, o] of open) {
+      if (exposed.has(k)) continue;
       tableIntervals.push({
         repo: id,
-        relation: pseudonym(raw.repo, relation),
+        relation: pseudonym(raw.repo, o.relation),
         kind: o.kind,
         startCommit: o.start.index,
         startDay: day(o.start),
         endCommit: r.index,
         endDay: day(r),
         open: false,
-        outcome: present.has(relation) ? "fixed" : "removed",
+        outcome: present.has(k) ? "fixed" : "removed",
         rewritten,
       });
-      open.delete(relation);
+      open.delete(k);
     }
     const tablesNow = tablesExposed(r).length > 0;
     if (tablesNow && !repoOpen) repoOpen = r;
@@ -227,10 +254,10 @@ for (const raw of raws) {
     }
   }
   const last = applied.at(-1);
-  for (const [relation, o] of open)
+  for (const o of open.values())
     tableIntervals.push({
       repo: id,
-      relation: pseudonym(raw.repo, relation),
+      relation: pseudonym(raw.repo, o.relation),
       kind: o.kind,
       startCommit: o.start.index,
       startDay: day(o.start),
@@ -305,7 +332,8 @@ const share = (n: number, d: number) => (d ? Math.round((1000 * n) / d) / 10 : n
 function durations(intervals: Interval[]) {
   const closed = intervals.filter((i) => !i.open);
   const open = intervals.filter((i) => i.open);
-  const days = (i: Interval) => i.endDay - i.startDay;
+  // A rewritten history can put a later commit at an earlier date; such a span counts as 0 days.
+  const days = (i: Interval) => Math.max(0, i.endDay - i.startDay);
   const bucket = (xs: Interval[]) =>
     Object.fromEntries(
       BUCKETS.map(([label, max], k) => [
@@ -343,6 +371,7 @@ function durations(intervals: Interval[]) {
       intervals.map((i) => ({ t: i.endCommit - i.startCommit, event: !i.open })),
     ),
     inRepositoriesWithRewrittenHistory: intervals.filter((i) => i.rewritten).length,
+    negativeDaysCountedAsZero: intervals.filter((i) => i.endDay < i.startDay).length,
   };
 }
 
@@ -423,7 +452,7 @@ const intervalCsv = (xs: Interval[], withRelation: boolean) =>
         i.endDay.toFixed(3),
         i.outcome,
         i.endCommit - i.startCommit,
-        (i.endDay - i.startDay).toFixed(3),
+        Math.max(0, i.endDay - i.startDay).toFixed(3),
         i.rewritten,
       ].join(","),
     ),

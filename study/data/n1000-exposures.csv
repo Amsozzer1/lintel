@@ -739,7 +739,7 @@ repo-417,b90c49f11e,table,0,0.000,24,15.819,fixed,24,15.819,true
 repo-417,7088e7f207,table,0,0.000,24,15.819,removed,24,15.819,true
 repo-417,42773adc8a,table,24,15.819,48,33.647,fixed,24,17.828,true
 repo-417,87ee78b124,table,32,25.715,48,33.647,fixed,16,7.932,true
-repo-417,56d8f0417f,table,24,15.819,56,36.074,fixed,32,20.255,true
+repo-417,56d8f0417f,table,24,15.819,56,36.074,removed,32,20.255,true
 repo-417,dc07bb19fb,table,48,33.647,234,167.895,open,186,134.248,true
 repo-417,9502737296,table,48,33.647,234,167.895,open,186,134.248,true
 repo-417,7d78b9e497,table,48,33.647,234,167.895,open,186,134.248,true
@@ -1092,12 +1092,12 @@ repo-653,dd866477e1,table,62,41.579,300,257.216,open,238,215.637,true
 repo-653,df2afe5815,table,62,41.579,300,257.216,open,238,215.637,true
 repo-653,5a0b2cc907,table,83,80.010,300,257.216,open,217,177.206,true
 repo-659,34ad6394a2,table,0,0.000,68,57.857,fixed,68,57.857,true
+repo-659,fd9128ac68,table,0,0.000,68,57.857,removed,68,57.857,true
 repo-659,58c91d2594,materialized view,0,0.000,68,57.857,removed,68,57.857,true
 repo-659,2ba510162f,table,10,3.192,68,57.857,fixed,58,54.665,true
 repo-659,2c40053cfc,table,68,57.857,72,58.793,removed,4,0.936,true
 repo-659,7212f3ddca,table,0,0.000,72,58.793,open,72,58.793,true
 repo-659,b1b3c5043a,table,0,0.000,72,58.793,open,72,58.793,true
-repo-659,fd9128ac68,table,0,0.000,72,58.793,open,72,58.793,true
 repo-659,5605f594f1,table,0,0.000,72,58.793,open,72,58.793,true
 repo-659,1d4ac87d97,table,0,0.000,72,58.793,open,72,58.793,true
 repo-659,6e99483d73,table,0,0.000,72,58.793,open,72,58.793,true
@@ -1178,6 +1178,7 @@ repo-659,2c4a5d52b6,view,68,57.857,72,58.793,open,4,0.936,true
 repo-659,6d1cf88182,table,68,57.857,72,58.793,open,4,0.936,true
 repo-659,d8f1756a4c,table,68,57.857,72,58.793,open,4,0.936,true
 repo-659,0134ceae90,table,68,57.857,72,58.793,open,4,0.936,true
+repo-659,fd9128ac68,view,68,57.857,72,58.793,open,4,0.936,true
 repo-659,42adeb7534,table,68,57.857,72,58.793,open,4,0.936,true
 repo-659,ce00908e1b,table,68,57.857,72,58.793,open,4,0.936,true
 repo-659,0d27370337,table,68,57.857,72,58.793,open,4,0.936,true
@@ -1689,8 +1690,8 @@ repo-899,60488d6db1,view,1,15.960,1,15.960,open,0,0.000,false
 repo-899,014a933897,view,1,15.960,1,15.960,open,0,0.000,false
 repo-899,26542f7335,view,1,15.960,1,15.960,open,0,0.000,false
 repo-899,ac7c6bbff2,view,1,15.960,1,15.960,open,0,0.000,false
-repo-905,3c39f0f4ba,materialized view,3,0.688,25,9.455,fixed,22,8.767,false
-repo-905,8f4ead6155,materialized view,3,0.688,25,9.455,fixed,22,8.767,false
+repo-905,3c39f0f4ba,materialized view,3,0.688,25,9.455,removed,22,8.767,false
+repo-905,8f4ead6155,materialized view,3,0.688,25,9.455,removed,22,8.767,false
 repo-908,6d92c8c967,table,0,0.000,1,0.087,fixed,1,0.087,false
 repo-908,e404d9c5d2,table,0,0.000,1,0.087,fixed,1,0.087,false
 repo-908,df6af307fe,table,0,0.000,1,0.087,fixed,1,0.087,false
@@ -1728,7 +1729,7 @@ repo-943,defed67029,table,7,59.779,7,59.779,open,0,0.000,false
 repo-943,38de29300f,table,7,59.779,7,59.779,open,0,0.000,false
 repo-949,80de2cf17a,table,10,614.207,10,614.207,open,0,0.000,false
 repo-954,6eb7aefabb,view,7,0.498,7,0.498,open,0,0.000,false
-repo-960,2f6ccd56fd,view,8,46.363,9,48.244,fixed,1,1.880,false
+repo-960,2f6ccd56fd,view,8,46.363,9,48.244,removed,1,1.880,false
 repo-964,97c610d47f,view,4,0.682,14,33.996,fixed,10,33.314,false
 repo-964,97c610d47f,view,24,42.902,35,108.904,fixed,11,66.002,false
 repo-970,4554ba4d3e,view,1,0.002,2,0.004,fixed,1,0.002,false

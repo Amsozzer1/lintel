@@ -4,15 +4,15 @@ Method, criteria and every change after collection: [README.md](README.md). Data
 
 ## In one paragraph
 
-Of the 777 repositories with at least one migration commit that replays, **146 (18.8%) had a table the public `anon` key could read in full at some point**: RLS was off, and `anon` could select. Of the 393 whose latest commit replays, **43 (10.9%) still do**. When an exposure ended, it had usually lasted more than a day: 67% of them did, and 37% lasted more than a week. Counting the exposures that are still open, the median exposure lasted 47 days (Kaplan–Meier).
+1,000 public repositories were sampled from the first 1,000 GitHub code-search hits in each of 8 file-size bands of Supabase migration files. Of the 777 with at least one migration commit that replays, **146 (18.8%) had a table the public `anon` key could read in full at some point**: RLS was off, and `anon` had `SELECT` on the whole table. Of the 393 whose latest commit replays, **43 (10.9%) still do**. When an exposure ended, it had usually lasted more than a day: 67% of them did, and 37% lasted more than a week. Counting the exposures that are still open, the median exposure lasted 47 days (Kaplan–Meier).
 
-These are statements about the SQL in public migration files, replayed into a local database. They aren't statements about any live project (see [Limitations](#limitations)).
+These are statements about the SQL in public migration files, replayed into a local database. They aren't statements about any live project, and they describe this search frame, not every public Supabase repository (see [Limitations](#limitations)).
 
 ## Sample
 
 | Step | Repositories |
 |---|---|
-| Candidates from GitHub code search (8 size slices) | 5,865 |
+| Candidates: the first 1,000 code-search hits in each of 8 file-size bands (every band hit the 1,000 cap) | 5,865 |
 | Screened, in seeded random order | 1,158 |
 | Rejected: fewer than 2 migration commits | 74 |
 | Rejected: fewer than 3 migration files | 66 |
@@ -31,6 +31,8 @@ The sample is young and small:
 - **History:** the median repository has 30 commits that touch its migrations, and half have more than 30. The interquartile range is 10 to 86, and the largest has 2,529.
 
 ## Primary measure: a table without RLS that `anon` can select
+
+**Definition:** a table in `public` with row level security off, on which the `anon` role has table-level `SELECT`. `anon` can then read every row and every column. A table that `anon` could select only through column grants would count as exposed under a broader definition, since `anon` could still read those columns of every row. The study checked for it, and none of the 146 repositories is in that case: every table counted here is selectable as a whole.
 
 | | Repositories | Share | 95% CI (Wilson) |
 |---|---|---|---|
@@ -132,10 +134,10 @@ Durations use committer dates. The unit is the repository: an exposure runs from
 **Per table:**
 
 - There were 1,269 table-level exposures:
-  - 517 were fixed: RLS turned on or the grant revoked;
-  - 80 were removed: the table was dropped;
-  - 672 were still open.
-- 68.7% of the ones that ended lasted more than a day, and 48.2% more than a week.
+  - 516 were fixed: RLS turned on or the grant revoked;
+  - 82 were removed: the relation was dropped, or replaced by one of another kind (a table by a view, say);
+  - 671 were still open.
+- 68.7% of the ones that ended lasted more than a day, and 48.3% more than a week.
 - The Kaplan–Meier median is 46.9 days.
 
 **Rewritten history:** 33 repositories (3.3%) have history that was rewritten, either with committer dates that go backwards or with a commit committed more than a day after it was authored. They contain 11 of the 161 repository-level exposures. Their durations in days are less reliable. Their durations in commits are unaffected.
@@ -180,7 +182,7 @@ These are **not exposures** and aren't part of any number above. A table here ha
 
 | Public read allowed by policy | Ever | At HEAD |
 |---|---|---|
-| A `SELECT` (or `ALL`) policy for `anon` whose `USING` is literally `true`, on a table with RLS on | 378 of 777, 48.6% [45.1, 52.2] | 175 of 393, 44.5% [39.7, 49.5] |
+| A `SELECT` policy, or an `ALL` policy, for `anon` whose `USING` is literally `true`, on a table with RLS on | 378 of 777, 48.6% [45.1, 52.2] | 175 of 393, 44.5% [39.7, 49.5] |
 | Lintel's P001 read rows as `anon` from a table with RLS on, using the repository's own seed data | 254 of 777, 32.7% [29.5, 36.1] | 137 of 393, 34.9% [30.3, 39.7] |
 
 **Why 48.6% here but 9.3% for Splinter's always-true lint:** the two count different things.
@@ -206,7 +208,8 @@ These are **not exposures** and aren't part of any number above. A table here ha
   - Those may differ from the rest. Keeping everything in migrations is itself a habit, and it may go along with other habits.
   - 43 repositories were still exposed at their last commit that replays, but their HEAD doesn't replay. Suppose they're added to the 393. If none of them is still exposed at HEAD, the at-HEAD share is 43 of 436 (9.9%). If all of them are, it's 86 of 436 (19.7%).
 - **Who's in the sample:**
-  - Public repositories found by code search, with a root-level `supabase/` folder.
+  - The frame is the first 1,000 GitHub code-search hits in each of 8 file-size bands of `supabase/migrations/*.sql` files. Every band hit the search API's 1,000-result cap, so each band is partial, in an order GitHub chooses. Repositories whose migration files fall outside those bands, or past the first 1,000 hits, had no chance of selection.
+  - Public repositories with a root-level `supabase/` folder.
   - Mostly young, mostly unstarred projects.
   - Monorepos with `supabase/` deeper down aren't included.
   - Public repositories skew toward hobby, demo and portfolio projects, even after the keyword filter.

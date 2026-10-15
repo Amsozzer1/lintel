@@ -123,19 +123,20 @@
       },
       "kaplanMeierMedianDays": 46.88,
       "kaplanMeierMedianCommits": 25,
-      "inRepositoriesWithRewrittenHistory": 11
+      "inRepositoriesWithRewrittenHistory": 11,
+      "negativeDaysCountedAsZero": 0
     },
     "perTable": {
       "total": 1269,
-      "closed": 597,
-      "openAtLastReplay": 672,
+      "closed": 598,
+      "openAtLastReplay": 671,
       "closedLongerThan1Day": {
-        "n": 410,
+        "n": 411,
         "pctOfClosed": 68.7
       },
       "closedLongerThan7Days": {
-        "n": 288,
-        "pctOfClosed": 48.2
+        "n": 289,
+        "pctOfClosed": 48.3
       },
       "knownLongerThan1Day": {
         "n": 857,
@@ -151,7 +152,7 @@
         "1 hour to 1 day": 144,
         "1 to 7 days": 122,
         "7 to 30 days": 103,
-        "30 to 90 days": 126,
+        "30 to 90 days": 127,
         "90 to 365 days": 59,
         "over 1 year": 0
       },
@@ -160,18 +161,19 @@
         "1 hour to 1 day": 126,
         "1 to 7 days": 90,
         "7 to 30 days": 55,
-        "30 to 90 days": 168,
+        "30 to 90 days": 167,
         "90 to 365 days": 131,
         "over 1 year": 3
       },
       "kaplanMeierMedianDays": 46.85,
       "kaplanMeierMedianCommits": 25,
-      "inRepositoriesWithRewrittenHistory": 241
+      "inRepositoriesWithRewrittenHistory": 241,
+      "negativeDaysCountedAsZero": 0
     },
     "tableOutcomes": {
-      "fixed": 517,
-      "removed": 80,
-      "open": 672
+      "fixed": 516,
+      "removed": 82,
+      "open": 671
     }
   },
   "history": {
@@ -235,7 +237,7 @@
       "extension not in the image": 60
     },
     "secondsPerCommit": {
-      "mean": 8.54,
+      "mean": 8.55,
       "max": 4571.677
     }
   },

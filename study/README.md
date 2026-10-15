@@ -121,3 +121,18 @@ Added after the results were first read (2026-10-14). Neither changes the primar
    - "Looks deployed" is one rule for every repository: a homepage field on a site that isn't a generic tool or docs site, or a README link to an app on an app-hosting domain.
    - Twelve of the repositories exposed at HEAD were checked by hand from their README and repository text: the seven whose only link was generic and the six with no private contact channel. The hand check overrides the rule for them.
    - Only the homepage field and the README were read. No URL was visited.
+
+Made after a code review of the results (2026-10-14). The headline numbers don't change.
+
+9. **Review fixes.**
+   - **Table-level SELECT.** Lintel's exposure probe counts a relation as selectable when `anon` can select the table *or any of its columns*. The primary measure now requires table-level `SELECT`.
+     - The replay records it (`tableSelect`).
+     - The 10 exposed repositories whose migrations grant column privileges at an exposed commit were replayed again with it. None has an exposed table that is selectable only through column grants.
+     - The other repositories have no column grants at any exposed commit, so they can't be in that case.
+   - **`ALL` policies and reads.** The policy query also matched an `ALL` policy that is `true` only in `WITH CHECK`, which allows writes but not reads. It now records whether `USING` is `true` (`qualTrue`), and an `ALL` policy counts as an open read only if it is.
+     - The 18 repositories whose result depended on an `ALL` policy were replayed again. In all 28 repositories replayed again, every always-true `ALL` policy (900 rows across their commits) has `USING (true)`, so no number changes.
+     - The per-commit policy count in `data/n1000-commits.csv` is checked only for those 18. For 46 other repositories with an always-true `ALL` policy, it isn't. Their repository-level results don't depend on it.
+   - **Replays matched.** The 28 repositories replayed again kept the same sampled commits, and each commit kept the same applied-or-failed outcome. The earlier replays stay in `study/private/`.
+   - **Kind changes.** Exposure intervals are per relation name *and* kind. A table replaced by a view of the same name ends one interval and starts another. One per-table interval that was open now ends, as removed, and one that was fixed is now removed.
+   - **Negative durations.** If a rewritten history gives a later commit an earlier date, the span counts as 0 days. There are none in this data.
+   - **Frame.** All 8 code-search size slices hit the search API's 1,000-result cap. The candidate frame is the first 1,000 hits in each slice, not every matching repository, and `results.md` says so. `collect.ts` now reports a saturated slice.

@@ -59,13 +59,22 @@ export interface CommitResult {
    * Study measure, not a Lintel check: permissive policies for anon or public whose USING or
    * WITH CHECK is literally true. Splinter skips SELECT ones on purpose.
    */
-  alwaysTrue?: { table: string; policy: string; cmd: string; roles: string[] }[];
+  alwaysTrue?: {
+    table: string;
+    policy: string;
+    cmd: string;
+    roles: string[];
+    /** USING is literally true. Absent in replays made before change 9. */
+    qualTrue?: boolean;
+  }[];
   exposed?: {
     schema: string;
     name: string;
     kind: string;
     rls: boolean;
     securityInvoker: boolean;
+    /** anon has table-level SELECT, not only column grants. Absent before change 9. */
+    tableSelect?: boolean;
   }[];
   /** Every table and view in public, to tell a fixed exposure from a dropped relation. */
   relations?: { name: string; kind: string; rls: boolean }[];
@@ -169,10 +178,27 @@ export async function replayCommit(
       replay: true,
       probes: true,
     });
-    const { exposed, relations, alwaysTrue } = await withClient(db.url, async (c) => ({
+    const { exposed, relations, alwaysTrue, tableSelect } = await withClient(db.url, async (c) => ({
+      // Relations anon can select as a whole table; exposedRelations also counts column grants.
+      tableSelect: new Set(
+        (
+          await c.query<{ name: string }>(
+            `select relname as name from pg_class
+              where relnamespace = 'public'::regnamespace and relkind in ('r', 'p', 'v', 'm')
+                and has_table_privilege('anon', oid, 'SELECT')`,
+          )
+        ).rows.map((r) => r.name),
+      ),
       alwaysTrue: (
-        await c.query<{ table: string; policy: string; cmd: string; roles: string[] }>(
-          `select tablename as table, policyname as policy, cmd, roles::text[] as roles
+        await c.query<{
+          table: string;
+          policy: string;
+          cmd: string;
+          roles: string[];
+          qualTrue: boolean;
+        }>(
+          `select tablename as table, policyname as policy, cmd, roles::text[] as roles,
+                  lower(regexp_replace(coalesce(qual, ''), '[\\s()]', '', 'g')) = 'true' as "qualTrue"
              from pg_policies
             where schemaname = 'public' and permissive = 'PERMISSIVE'
               and roles && array['anon', 'public']::name[]
@@ -201,7 +227,7 @@ export async function replayCommit(
         proven: f.probe_state === "proven",
         ...(f.rule === "rls_policy_always_true" ? { message: f.message } : {}),
       })),
-      exposed,
+      exposed: exposed.map((e) => ({ ...e, tableSelect: tableSelect.has(e.name) })),
       relations,
       alwaysTrue,
       unverified: report.probes.unverified ?? [],

@@ -22,7 +22,7 @@ interface Sampled {
 interface Commit {
   index: number;
   applied: boolean;
-  exposed?: { kind: string; rls: boolean }[];
+  exposed?: { kind: string; rls: boolean; tableSelect?: boolean }[];
 }
 
 const sample = JSON.parse(readFileSync(new URL("sample.json", PRIVATE), "utf8")) as Sampled[];
@@ -62,7 +62,9 @@ function looksDeployed(s: Sampled): boolean {
 }
 
 const tables = (r: Commit) =>
-  (r.exposed ?? []).some((e) => (e.kind === "r" || e.kind === "p") && !e.rls);
+  (r.exposed ?? []).some(
+    (e) => (e.kind === "r" || e.kind === "p") && !e.rls && e.tableSelect !== false,
+  );
 const raws = new Map<string, Commit[]>();
 for (const f of readdirSync(new URL(`${rawDir}/`, PRIVATE))) {
   const raw = JSON.parse(readFileSync(new URL(`${rawDir}/${f}`, PRIVATE), "utf8"));
