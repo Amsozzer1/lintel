@@ -25,3 +25,7 @@ insert into public.direct_messages (sender_id, recipient_id, body) values
   ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 'the acquisition closes friday. do NOT tell anyone'),
   ('22222222-2222-2222-2222-222222222222', '11111111-1111-1111-1111-111111111111', 'my lips are sealed'),
   ('11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222', 'new wifi password is correct-horse-battery-staple');
+
+insert into public.invoices (customer_id, amount_cents, card_last4, billing_address) values
+  ('11111111-1111-1111-1111-111111111111', 4900, '4242', '12 Analytical Engine Way, London'),
+  ('22222222-2222-2222-2222-222222222222', 4900, '1881', '7 Ledger Lane, Bristol');
