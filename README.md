@@ -4,6 +4,8 @@
 
 Lintel replays your base branch's and your PR's migrations into two throwaway Supabase databases and checks both. It posts one PR comment listing only what the PR changed: **new**, **fixed in this PR**, **unchanged**. It can also *prove* a leak by querying as `anon` or as another user.
 
+Study: [How often do public Supabase repos ship a readable table?](study/results.md)
+
 > **Status: early development.** The table below lists what works today. Everything else is in [docs/design.md](docs/design.md).
 
 ## Built on Supabase's linter
