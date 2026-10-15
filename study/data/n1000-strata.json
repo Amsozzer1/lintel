@@ -1,0 +1,128 @@
+{
+  "note": "primary measure: a table without RLS that anon can select; ever over repositories with an applied commit, atHead over repositories whose HEAD replays; tooSmall when the denominator is under 30 or either side has fewer than 5",
+  "stars": {
+    "0": {
+      "repositories": 794,
+      "ever": {
+        "n": 101,
+        "of": 620,
+        "pct": 16.3,
+        "ci95": [13.6, 19.4],
+        "tooSmall": false
+      },
+      "atHead": {
+        "n": 26,
+        "of": 312,
+        "pct": 8.3,
+        "ci95": [5.8, 11.9],
+        "tooSmall": false
+      }
+    },
+    "1-9": {
+      "repositories": 188,
+      "ever": {
+        "n": 38,
+        "of": 142,
+        "pct": 26.8,
+        "ci95": [20.2, 34.6],
+        "tooSmall": false
+      },
+      "atHead": {
+        "n": 14,
+        "of": 69,
+        "pct": 20.3,
+        "ci95": [12.5, 31.2],
+        "tooSmall": false
+      }
+    },
+    "10+": {
+      "repositories": 18,
+      "ever": {
+        "n": 7,
+        "of": 15,
+        "pct": 46.7,
+        "ci95": [24.8, 69.9],
+        "tooSmall": true
+      },
+      "atHead": {
+        "n": 3,
+        "of": 12,
+        "pct": 25,
+        "ci95": [8.9, 53.2],
+        "tooSmall": true
+      }
+    }
+  },
+  "created": {
+    "2026": {
+      "repositories": 719,
+      "ever": {
+        "n": 100,
+        "of": 566,
+        "pct": 17.7,
+        "ci95": [14.7, 21],
+        "tooSmall": false
+      },
+      "atHead": {
+        "n": 30,
+        "of": 315,
+        "pct": 9.5,
+        "ci95": [6.8, 13.3],
+        "tooSmall": false
+      }
+    },
+    "before 2026": {
+      "repositories": 281,
+      "ever": {
+        "n": 46,
+        "of": 211,
+        "pct": 21.8,
+        "ci95": [16.8, 27.8],
+        "tooSmall": false
+      },
+      "atHead": {
+        "n": 13,
+        "of": 78,
+        "pct": 16.7,
+        "ci95": [10, 26.5],
+        "tooSmall": false
+      }
+    }
+  },
+  "looksDeployed": {
+    "yes": {
+      "repositories": 603,
+      "ever": {
+        "n": 97,
+        "of": 464,
+        "pct": 20.9,
+        "ci95": [17.5, 24.8],
+        "tooSmall": false
+      },
+      "atHead": {
+        "n": 31,
+        "of": 254,
+        "pct": 12.2,
+        "ci95": [8.7, 16.8],
+        "tooSmall": false
+      }
+    },
+    "no or unclear": {
+      "repositories": 397,
+      "ever": {
+        "n": 49,
+        "of": 313,
+        "pct": 15.7,
+        "ci95": [12, 20.1],
+        "tooSmall": false
+      },
+      "atHead": {
+        "n": 12,
+        "of": 139,
+        "pct": 8.6,
+        "ci95": [5, 14.5],
+        "tooSmall": false
+      }
+    }
+  }
+}

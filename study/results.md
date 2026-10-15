@@ -1,0 +1,232 @@
+# Results: 1,000 public Supabase repositories, replayed
+
+Method, criteria and every change after collection: [README.md](README.md). Data: [`data/`](data/). Collected 2026-10-13 to 2026-10-14.
+
+## In one paragraph
+
+1,000 public repositories were sampled from the first 1,000 GitHub code-search hits in each of 8 file-size bands of Supabase migration files. Of the 777 with at least one migration commit that replays, **146 (18.8%) had a table the public `anon` key could read in full at some point**: RLS was off, and `anon` had `SELECT` on the whole table. Of the 393 whose latest commit replays, **43 (10.9%) still do**. When an exposure ended, it had usually lasted more than a day: 67% of them did, and 37% lasted more than a week. Counting the exposures that are still open, the median exposure lasted 47 days (Kaplan–Meier).
+
+These are statements about the SQL in public migration files, replayed into a local database. They aren't statements about any live project, and they describe this search frame, not every public Supabase repository (see [Limitations](#limitations)).
+
+## Sample
+
+| Step | Repositories |
+|---|---|
+| Candidates: the first 1,000 code-search hits in each of 8 file-size bands (every band hit the 1,000 cap) | 5,865 |
+| Screened, in seeded random order | 1,158 |
+| Rejected: fewer than 2 migration commits | 74 |
+| Rejected: fewer than 3 migration files | 66 |
+| Rejected: template repository | 11 |
+| Rejected: template or tutorial keyword | 7 |
+| **Eligible, and the sample** | **1,000** |
+| Couldn't be cloned at replay (deleted or made private since screening) | 5 |
+| At least one sampled commit replays | 777 (77.7%) |
+| The latest (HEAD) commit replays | 393 (39.3%) |
+
+The sample is young and small:
+
+- **Age:** 72% of the repositories were created in 2026 and 25% in 2025.
+- **Stars:** 79% have no stars, and the median is 0.
+- **Homepage:** 57% list one.
+- **History:** the median repository has 30 commits that touch its migrations, and half have more than 30. The interquartile range is 10 to 86, and the largest has 2,529.
+
+## Primary measure: a table without RLS that `anon` can select
+
+**Definition:** a table in `public` with row level security off, on which the `anon` role has table-level `SELECT`. `anon` can then read every row and every column. A table that `anon` could select only through column grants would count as exposed under a broader definition, since `anon` could still read those columns of every row. The study checked for it, and none of the 146 repositories is in that case: every table counted here is selectable as a whole.
+
+| | Repositories | Share | 95% CI (Wilson) |
+|---|---|---|---|
+| Ever, at any sampled commit | 146 of 777 | **18.8%** | 16.2 to 21.7% |
+| At HEAD | 43 of 393 | **10.9%** | 8.2 to 14.4% |
+
+**Denominators:**
+
+- "Ever" is over the 777 repositories (77.7% of the sample) with at least one commit that replays.
+- "At HEAD" is over the 393 (39.3%) whose latest commit replays.
+
+**Not counted either way:** 43 more repositories were still exposing a table at their last commit that replays, but their HEAD doesn't replay. Their state at HEAD is unknown, so they aren't in the at-HEAD figure in either direction.
+
+### By stratum
+
+The same measure and the same denominators, split three ways. Intervals are 95% Wilson intervals.
+
+A cell marked *too small* has a denominator under 30, or fewer than 5 repositories on one side of the measure. Read those cells as "not measured", not as a rate.
+
+**By stars**
+
+| Stars | Repositories | Ever | At HEAD |
+|---|---|---|---|
+| 0 | 794 | 101 of 620, 16.3% [13.6, 19.4] | 26 of 312, 8.3% [5.8, 11.9] |
+| 1 to 9 | 188 | 38 of 142, 26.8% [20.2, 34.6] | 14 of 69, 20.3% [12.5, 31.2] |
+| 10 or more | 18 | 7 of 15: *too small* | 3 of 12: *too small* |
+
+**By creation year**
+
+| Created | Repositories | Ever | At HEAD |
+|---|---|---|---|
+| Before 2026 | 281 | 46 of 211, 21.8% [16.8, 27.8] | 13 of 78, 16.7% [10.0, 26.5] |
+| 2026 | 719 | 100 of 566, 17.7% [14.7, 21.0] | 30 of 315, 9.5% [6.8, 13.3] |
+
+**By whether the project looks deployed**
+
+| Looks deployed | Repositories | Ever | At HEAD |
+|---|---|---|---|
+| Yes | 603 | 97 of 464, 20.9% [17.5, 24.8] | 31 of 254, 12.2% [8.7, 16.8] |
+| No or unclear | 397 | 49 of 313, 15.7% [12.0, 20.1] | 12 of 139, 8.6% [5.0, 14.5] |
+
+**What counts as "looks deployed":**
+
+- One rule for every repository: the repository's homepage field is a site that isn't a generic tool, platform or docs site, or the README links an app on an app-hosting domain such as `*.vercel.app` or `*.netlify.app`.
+- Nothing was visited; only the homepage field and the README were read.
+- 12 of the 43 repositories exposed at HEAD were also checked by hand, from their README and repository text: the 7 whose only link was a generic one, and the 6 with no private contact channel (one was in both).
+  - The hand check found 6 deployed, 3 not deployed and 3 unclear. The unclear ones are counted as "no or unclear".
+  - It disagreed with the rule twice. Both times the rule said "no" and the repository's own text said the project was deployed, so the rule probably undercounts deployed projects a little.
+- The rule alone classes the other 988 repositories.
+
+**How to read the strata:**
+
+- **Stars:** repositories with 1 to 9 stars were more likely to be exposed than those with none, ever and at HEAD, and the intervals don't overlap.
+- **Year and deployment:** the differences are within the intervals.
+- **Mixed effects:** these splits aren't independent. Older and starred repositories tend to have longer histories, and "ever" rises with the number of commits replayed, because every commit is another chance. None of these splits isolates a cause.
+
+## Other routes to the same data
+
+These are reported on their own, not folded into the headline. Same denominators.
+
+| Measure | Ever | At HEAD |
+|---|---|---|
+| View or materialized view `anon` can select that bypasses RLS (not `security_invoker`) | 122 of 777, 15.7% [13.3, 18.4] | 42 of 393, 10.7% [8.0, 14.1] |
+| Always-true write policy for `anon` (Splinter's `rls_policy_always_true`) | 72 of 777, 9.3% [7.4, 11.5] | 28 of 393, 7.1% [5.0, 10.1] |
+
+- **Views:** a view that isn't `security_invoker` runs with its owner's rights, so it can show rows that the table's RLS would hide.
+- **Writes:** Splinter's lint flags a policy for `anon` (or for every role) that lets any row be inserted, updated or deleted: `USING (true)` or `WITH CHECK (true)` on `INSERT`, `UPDATE`, `DELETE` or `ALL`.
+
+## How long exposures lasted
+
+Durations use committer dates. The unit is the repository: an exposure runs from the first commit where any table is exposed to the first later commit where none is. Per-table figures follow below and are in `data/n1000-exposures.csv`.
+
+| | Repository-level exposures |
+|---|---|
+| Total, in 146 repositories | 161 |
+| Ended (all tables fixed or dropped) | 75 |
+| Still open at the last commit that replays | 86 |
+| Ended exposures that lasted more than 1 day | 50 of 75 (66.7%) |
+| Ended exposures that lasted more than 7 days | 28 of 75 (37.3%) |
+| All exposures known to have lasted more than 1 day | 108 of 161 (67.1%) |
+| All exposures known to have lasted more than 7 days | 78 of 161 (48.4%) |
+| Ended at the next migration commit | 22 |
+| **Median (Kaplan–Meier, open exposures censored)** | **46.9 days; 25 migration commits** |
+
+"Known to have lasted" counts an exposure that is still open only once it has already passed the threshold.
+
+**Distribution:**
+
+| Duration | Ended | Still open (so far) |
+|---|---|---|
+| Under 1 hour | 8 | 17 |
+| 1 hour to 1 day | 17 | 11 |
+| 1 to 7 days | 22 | 8 |
+| 7 to 30 days | 9 | 12 |
+| 30 to 90 days | 13 | 17 |
+| 90 to 365 days | 5 | 20 |
+| Over 1 year | 1 | 1 |
+
+**Per table:**
+
+- There were 1,269 table-level exposures:
+  - 516 were fixed: RLS turned on or the grant revoked;
+  - 82 were removed: the relation was dropped, or replaced by one of another kind (a table by a view, say);
+  - 671 were still open.
+- 68.7% of the ones that ended lasted more than a day, and 48.3% more than a week.
+- The Kaplan–Meier median is 46.9 days.
+
+**Rewritten history:** 33 repositories (3.3%) have history that was rewritten, either with committer dates that go backwards or with a commit committed more than a day after it was authored. They contain 11 of the 161 repository-level exposures. Their durations in days are less reliable. Their durations in commits are unaffected.
+
+## Did the 30-commit cap miss anything?
+
+495 of the 995 replayed repositories have more than 30 migration commits. For those, the replay sampled 30 of them: the first, the last and evenly spaced ones in between.
+
+25 of them, drawn at random with a separate seed, were replayed again with no cap: 3,026 commits.
+
+- **Which repositories are exposed:** no change. Each of the 25 has the same "ever exposed" result with and without the cap.
+- **Tables:**
+  - The uncapped replays found 30 exposed tables, 29 of which the capped replays had also found.
+  - The one missed was in a repository that the cap already counted as exposed.
+- **Start of an exposure:** 12 of the 30 started earlier without the cap:
+  - 10 by one commit (under 0.1 days);
+  - one by 3 commits (0.37 days);
+  - one by 10 commits (0.92 days).
+- **Durations:** in the 6 rechecked repositories with a repository-level exposure, the uncapped durations are within 0.75 days of the capped ones. One exposure that the capped replay left open turned out to have ended after 2.1 days.
+
+The cap can shorten a duration by up to about a day, by catching the start late. It didn't change any repository's classification.
+
+## Why commits don't replay
+
+21,041 commits were sampled and 8,650 (41.1%) replayed. A commit that doesn't replay is left out of the timelines, and its reason is kept.
+
+| Reason | Commits |
+|---|---|
+| Refers to a table, column, function, type or schema that doesn't exist when the migration runs (usually made outside the migrations, in the dashboard) | 8,510 |
+| Other SQL error | 1,645 |
+| Other | 1,265 |
+| Raised by the migration itself (`RAISE EXCEPTION`, e.g. "run this after X") | 464 |
+| Permission denied | 425 |
+| Extension that isn't in the Supabase image | 60 |
+| Infrastructure (git or Docker): 9 that failed again on the retry, and 13 from one repository that weren't retried (see [Limitations](#limitations)) | 22 |
+
+At HEAD, 415 of the 602 repositories whose latest commit doesn't replay fail because of an object created outside the migrations (69%). Their migration files on their own don't rebuild their database. That is the main reason only 39% of HEADs replay.
+
+## Public reads allowed by policy (often intentional, e.g. public profiles or posts)
+
+These are **not exposures** and aren't part of any number above. A table here has RLS on, and a policy chose to let `anon` read it. That is how a public profile page or a blog works. They're reported because the size of the gap between the two policy measures needs an explanation.
+
+| Public read allowed by policy | Ever | At HEAD |
+|---|---|---|
+| A `SELECT` policy, or an `ALL` policy, for `anon` whose `USING` is literally `true`, on a table with RLS on | 378 of 777, 48.6% [45.1, 52.2] | 175 of 393, 44.5% [39.7, 49.5] |
+| Lintel's P001 read rows as `anon` from a table with RLS on, using the repository's own seed data | 254 of 777, 32.7% [29.5, 36.1] | 137 of 393, 34.9% [30.3, 39.7] |
+
+**Why 48.6% here but 9.3% for Splinter's always-true lint:** the two count different things.
+
+- **Splinter's lint excludes reads.** It skips `SELECT` policies with `USING (true)` on purpose: its own description says the pattern "is often used deliberately for public read access". It only flags always-true writes.
+- **The `true` SELECT row counts exactly the policies Splinter skips.** Open reads are common and open writes are rarer.
+- **The overlap:** 60 of the 72 repositories with an always-true write policy also have an always-true read policy.
+
+**About the P001 row:**
+
+- It depends on the seed data: P001 can only prove a read when `seed.sql` puts rows in the table.
+- Proven reads on tables with RLS off are left out of this row. Those are the headline exposure.
+- Counting both kinds, P001 proved an `anon` read in 288 of 777 repositories (37.1%) ever and in 148 of 393 (37.7%) at HEAD.
+
+## Limitations
+
+- **Migrations aren't the deployed database.**
+  - A project can turn on RLS or revoke grants in the dashboard without a migration, and then it looks exposed here when it isn't.
+  - The reverse happens too: a table created in the dashboard never appears here.
+  - Nothing here was checked against a live project, by design.
+- **Replayability:**
+  - The at-HEAD figure covers only the 39% of repositories whose HEAD replays.
+  - Those may differ from the rest. Keeping everything in migrations is itself a habit, and it may go along with other habits.
+  - 43 repositories were still exposed at their last commit that replays, but their HEAD doesn't replay. Suppose they're added to the 393. If none of them is still exposed at HEAD, the at-HEAD share is 43 of 436 (9.9%). If all of them are, it's 86 of 436 (19.7%).
+- **Who's in the sample:**
+  - The frame is the first 1,000 GitHub code-search hits in each of 8 file-size bands of `supabase/migrations/*.sql` files. Every band hit the search API's 1,000-result cap, so each band is partial, in an order GitHub chooses. Repositories whose migration files fall outside those bands, or past the first 1,000 hits, had no chance of selection.
+  - Public repositories with a root-level `supabase/` folder.
+  - Mostly young, mostly unstarred projects.
+  - Monorepos with `supabase/` deeper down aren't included.
+  - Public repositories skew toward hobby, demo and portfolio projects, even after the keyword filter.
+- **"Exposed" means a role, not a request.** It means the `anon` role has `SELECT` and RLS is off in the replayed database. Nobody requested anything from a real project.
+- **P001 depends on seed data.** It can only prove a read where `seed.sql` puts rows in the table.
+- **Sampling between commits:** above 30 commits per repository, an exposure can start between sampled commits. The [cap recheck](#did-the-30-commit-cap-miss-anything) puts that at about a day at most, with no change to which repositories are counted.
+- **One infrastructure fix after collection.** 1,538 commits first failed in git, inside the replay, and were replayed again. The fix and its effect are in README change 6.
+- **One repository not fully retried.** One repository has a very long migration history, and replaying it takes 30 to 75 minutes per commit, so 13 of its sampled commits weren't replayed again and still count as infrastructure failures. One repository can move "ever" by at most 0.13 points and "at HEAD" by at most 0.3 points.
+
+## Data
+
+All repository names are replaced by `repo-NNN`, table names by salted hashes, and dates by days since each repository's first migration commit.
+
+| File | One row per |
+|---|---|
+| `data/n1000-summary.json` | Every number on this page |
+| `data/n1000-commits.csv` | Sampled commit: replayed or not, failure class, exposure counts, seconds |
+| `data/n1000-exposures.csv` | Table or view exposure: start, end, outcome, length in commits and days |
+| `data/n1000-repo-exposures.csv` | Repository-level exposure |
+| `data/n1000-strata.json` | The primary measure by stars, creation year and "looks deployed" (counts only) |
