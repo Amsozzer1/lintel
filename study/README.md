@@ -100,3 +100,14 @@ Made during the pilot (10 repositories, 2026-10-13). None of them changes which 
 3. **Unit of the duration headline.** It is the repository: from the first commit where any table is exposed to the first later commit where none is. Per-table intervals are still published. Per table, a repository with 14 exposed tables would count 14 times.
 4. **Failure class.** Exceptions raised by a migration itself (`P0001`, e.g. "table X must exist before this migration") get their own failure class instead of "other".
 5. **Reading files.** The replay fetches each commit's migration files in one batched read before reading them. Hundreds of parallel lazy fetches from a blob-less clone failed now and then. Three pilot commits failed that way, and those two repositories were replayed again.
+
+Made after the full run's replay (2026-10-14). It changes no criterion and no measure.
+
+6. **Infrastructure failures replayed again.**
+   - **What went wrong:** 1,538 of the 21,041 sampled commits (in 435 repositories) failed for a reason other than their migrations:
+     - 1,535 failed in git;
+     - 3 lost the database connection.
+   - **Cause:** every lazy blob fetch adds a pack to the clone. Past git's pack limit, automatic maintenance repacked the clone while the replay was still reading it. The read then failed with "in the commit graph file but not in the object database". The replay classed those commits as unreplayable. They were 12% of all failed commits (1,538 of 12,699), and 50 were a repository's HEAD.
+   - **Fix:** automatic maintenance is off in the clones (`gc.auto=0`, `maintenance.auto=false`, `fetch.writeCommitGraph=false`). `study/repair.ts` replays those commits again in place. A commit that fails the same way twice keeps its failure.
+   - **Kept:** the results before the repair stay in `study/private/`.
+   - **Cap recheck:** it was stopped after its first repository and finished with the fix in place.

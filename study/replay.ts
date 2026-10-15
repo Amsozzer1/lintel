@@ -81,7 +81,16 @@ export function capCommits<T>(commits: T[], max: number): T[] {
   return [...picked].sort((a, b) => a - b).map((i) => commits[i] as T);
 }
 
-async function clone(s: Sampled): Promise<string> {
+// Every lazy blob fetch adds a pack; past gc.autoPackLimit, git repacks in the background while
+// the replay is still reading, and a read then fails with "in the commit graph file but not in the
+// object database". The clones are throwaway, so automatic maintenance is off.
+const NO_AUTO_MAINTENANCE = [
+  ["gc.auto", "0"],
+  ["maintenance.auto", "false"],
+  ["fetch.writeCommitGraph", "false"],
+];
+
+export async function clone(s: Sampled): Promise<string> {
   const dir = new URL(`${s.repo.replace("/", "__")}/`, CLONES).pathname;
   if (!existsSync(dir)) {
     await execa("git", [
@@ -96,10 +105,12 @@ async function clone(s: Sampled): Promise<string> {
       dir,
     ]);
   }
+  for (const [key, value] of NO_AUTO_MAINTENANCE)
+    await execa("git", ["config", key as string, value as string], { cwd: dir });
   return dir;
 }
 
-async function replayCommit(
+export async function replayCommit(
   dir: string,
   sha: string,
   date: string,
